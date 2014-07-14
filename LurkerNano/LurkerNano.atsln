@@ -1,0 +1,50 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Atmel Studio Solution File, Format Version 11.00
+Project("{E66E83B9-2572-4076-B26E-6BE79FF3018A}") = "LurkerNano", "LurkerNano.cppproj", "{07B459B4-8D76-4638-BC6D-A459BA2D616B}"
+EndProject
+Project("{E66E83B9-2572-4076-B26E-6BE79FF3018A}") = "RadioTest", "..\RadioTest\RadioTest.cppproj", "{E157DA33-7362-4999-A540-211FF20F1620}"
+EndProject
+Project("{E66E83B9-2572-4076-B26E-6BE79FF3018A}") = "StreamTestTx", "..\Libraries\RF24\examples\StreamTestTx\StreamTestTx.cppproj", "{C17B9E11-DC9C-448F-9985-D5A1E2EF2B26}"
+EndProject
+Project("{E66E83B9-2572-4076-B26E-6BE79FF3018A}") = "StreamTestRx", "..\Libraries\RF24\examples\StreamTestRx\StreamTestRx.cppproj", "{7837D888-AA79-4424-A62C-41494340DF83}"
+EndProject
+Project("{E66E83B9-2572-4076-B26E-6BE79FF3018A}") = "GettingStarted", "..\Libraries\RF24\examples\GettingStarted\GettingStarted.cppproj", "{7494BB60-6F29-495D-8575-7633F6C60F8B}"
+EndProject
+Project("{E66E83B9-2572-4076-B26E-6BE79FF3018A}") = "LurkerCoordinator", "..\LurkerCoordinator\LurkerCoordinator.cppproj", "{E324CE39-C2D1-4DF7-A18F-FDC0859E0E1F}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|AVR = Debug|AVR
+		Release|AVR = Release|AVR
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{07B459B4-8D76-4638-BC6D-A459BA2D616B}.Debug|AVR.ActiveCfg = Debug|AVR
+		{07B459B4-8D76-4638-BC6D-A459BA2D616B}.Debug|AVR.Build.0 = Debug|AVR
+		{07B459B4-8D76-4638-BC6D-A459BA2D616B}.Release|AVR.ActiveCfg = Release|AVR
+		{07B459B4-8D76-4638-BC6D-A459BA2D616B}.Release|AVR.Build.0 = Release|AVR
+		{E157DA33-7362-4999-A540-211FF20F1620}.Debug|AVR.ActiveCfg = Debug|AVR
+		{E157DA33-7362-4999-A540-211FF20F1620}.Debug|AVR.Build.0 = Debug|AVR
+		{E157DA33-7362-4999-A540-211FF20F1620}.Release|AVR.ActiveCfg = Release|AVR
+		{E157DA33-7362-4999-A540-211FF20F1620}.Release|AVR.Build.0 = Release|AVR
+		{C17B9E11-DC9C-448F-9985-D5A1E2EF2B26}.Debug|AVR.ActiveCfg = Debug|AVR
+		{C17B9E11-DC9C-448F-9985-D5A1E2EF2B26}.Debug|AVR.Build.0 = Debug|AVR
+		{C17B9E11-DC9C-448F-9985-D5A1E2EF2B26}.Release|AVR.ActiveCfg = Release|AVR
+		{C17B9E11-DC9C-448F-9985-D5A1E2EF2B26}.Release|AVR.Build.0 = Release|AVR
+		{7837D888-AA79-4424-A62C-41494340DF83}.Debug|AVR.ActiveCfg = Debug|AVR
+		{7837D888-AA79-4424-A62C-41494340DF83}.Debug|AVR.Build.0 = Debug|AVR
+		{7837D888-AA79-4424-A62C-41494340DF83}.Release|AVR.ActiveCfg = Release|AVR
+		{7837D888-AA79-4424-A62C-41494340DF83}.Release|AVR.Build.0 = Release|AVR
+		{7494BB60-6F29-495D-8575-7633F6C60F8B}.Debug|AVR.ActiveCfg = Debug|AVR
+		{7494BB60-6F29-495D-8575-7633F6C60F8B}.Debug|AVR.Build.0 = Debug|AVR
+		{7494BB60-6F29-495D-8575-7633F6C60F8B}.Release|AVR.ActiveCfg = Release|AVR
+		{7494BB60-6F29-495D-8575-7633F6C60F8B}.Release|AVR.Build.0 = Release|AVR
+		{E324CE39-C2D1-4DF7-A18F-FDC0859E0E1F}.Debug|AVR.ActiveCfg = Debug|AVR
+		{E324CE39-C2D1-4DF7-A18F-FDC0859E0E1F}.Debug|AVR.Build.0 = Debug|AVR
+		{E324CE39-C2D1-4DF7-A18F-FDC0859E0E1F}.Release|AVR.ActiveCfg = Release|AVR
+		{E324CE39-C2D1-4DF7-A18F-FDC0859E0E1F}.Release|AVR.Build.0 = Release|AVR
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
