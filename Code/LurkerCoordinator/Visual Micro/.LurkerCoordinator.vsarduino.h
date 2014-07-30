@@ -5,15 +5,11 @@
 	        all non-arduino files created by visual micro and all visual studio project or solution files can be freely deleted and are not required to compile a sketch (do not delete your own code!).
 	        note: debugger breakpoints are stored in '.sln' or '.asln' files, knowledge of last uploaded breakpoints is stored in the upload.vmps.xml file. Both files are required to continue a previous debug session without needing to compile and upload again
 	
-	Hardware: Arduino Leonardo, Platform=avr, Package=arduino
+	Hardware: Arduino Nano w/ ATmega328, Platform=avr, Package=arduino
 */
 
-#define __AVR_ATmega32u4__
-#define __AVR_ATmega32U4__
-#define USB_VID 0x2341
-#define USB_PID 0x8036
-#define USB_MANUFACTURER 
-#define USB_PRODUCT "\"Arduino Leonardo\""
+#define __AVR_ATmega328p__
+#define __AVR_ATmega328P__
 #define ARDUINO 101
 #define ARDUINO_MAIN
 #define F_CPU 16000000L
@@ -26,14 +22,17 @@ extern "C" void __cxa_pure_virtual() {;}
 void initialiseRadio();
 void initialiseSensors();
 void startEnumeration();
+void checkSerial();
 void processNetworkJoin(char unitID);
 void confirmNetworkJoin(char unitID);
 void transmitChar(char unitID, char message);
 int findRoutingEntry(char unitID);
 void checkRadio();
 void requestPackets();
+void handleIncomingPacket();
 void processReceivedPacket();
-void acknowledgeRequest(char c);
+void handleSoundNotification(int unitID);
+void handleMotionNotification(int unitID);
 void toSendBuffer(char c);
 void resetSendBuffer();
 char fromReceiveBuffer();
@@ -45,8 +44,10 @@ void checkTemperature();
 void checkHumidity();
 void checkLight();
 void checkSound();
+void sendSoundNotification();
 void checkMovement();
+void sendMotionNotification();
 
-#include "c:\Program Files (x86)\Arduino\hardware\arduino\avr\variants\leonardo\pins_arduino.h" 
+#include "c:\Program Files (x86)\Arduino\hardware\arduino\avr\variants\eightanaloginputs\pins_arduino.h" 
 #include "c:\Program Files (x86)\Arduino\hardware\arduino\avr\cores\arduino\arduino.h"
-#include "e:\Dropbox\Projects\LurkerCoordinator\LurkerCoordinator.ino"
+#include "E:\Dropbox\Projects\Lurker\LurkerCoordinator\LurkerCoordinator.ino"

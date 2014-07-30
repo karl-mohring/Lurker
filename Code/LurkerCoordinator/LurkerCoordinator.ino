@@ -44,6 +44,9 @@ enum COMM_CODES{
 	
 	DATA_PACKET_REQUEST = 'D',
 	DATA_PACKET_RESPONSE = 'd'
+	
+	SOUND_NOTIFICATION = 's',
+	MOTION_NOTIFICATION = 'm'
 };
 
 
@@ -90,18 +93,19 @@ BH1750FVI lightSensor;
 #define BUTTON1_PIN A6
 #define BUTTON2_PIN A7
 
+#define SAMPLE_PERIOD 60000
+
 //////////////////////////////////////////////////////////////////////////
 // Variables
-float temperature;
-float humidity;
+int temperature;
+int humidity;
 int illuminance;
 int	noiseLevel;
 bool noiseTriggered;
 bool movementDetected;
 
 unsigned long timeOfLastMovement;
-unsigned long timeSinceLastMovement;
-int dailyMovementEvents;
+unsigned long timeOfLastNoise;
 
 #define SEND_BUFFER_SIZE 32
 #define RECEIVE_BUFFER_SIZE 32
@@ -110,6 +114,7 @@ char receiveBuffer[RECEIVE_BUFFER_SIZE];
 byte sendBufferPutter;
 byte receiveBufferGetter;
 
+long timeOfSample;
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -119,8 +124,11 @@ byte receiveBufferGetter;
 void setup(){
 	Serial.begin(57600);
 	Serial.print("Lurker Nano - Coordinator");
+	
 	initialiseRadio();
 	initialiseSensors();
+	
+	startEnumeration();
 }
 
 
@@ -129,9 +137,10 @@ void setup(){
 */
 void loop()
 {
+	checkSerial();
 	checkRadio();
 	checkSensors();
-
+	
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -173,7 +182,7 @@ void initialiseSensors(){
 
 
 /**
-*
+* Notify any listening network devices that enumeration has begun.
 */
 void startEnumeration(){
 	// Flush the routing table
@@ -195,6 +204,10 @@ void startEnumeration(){
 }
 
 
+void checkSerial(){
+	//TODO Check for serial inputs from the connected Pi/PC
+}
+
 /**
 * Process a network join request
 * Add the node to the routing table if it doesn't already exist
@@ -205,6 +218,8 @@ void processNetworkJoin(char unitID){
 		addRoutingTableEntry(unitID);
 		confirmNetworkJoin(unitID);
 	}
+	
+	confirmNetworkJoin(unitID);
 }
 
 
@@ -225,7 +240,6 @@ void transmitChar(char unitID, char message){
 	resetSendBuffer();
 	toSendBuffer(message);
 	radio.write(sendBuffer, sendBufferPutter);
-	radio.openReadingPipe(BASE_PIPE);
 	radio.startListening();
 }
 
@@ -254,8 +268,7 @@ int findRoutingEntry(char unitID){
 */
 void checkRadio(){
 	if (radio.available()){
-		radio.read(receiveBuffer, RECEIVE_BUFFER_SIZE);
-		processReceivedPacket();
+		handleIncomingPacket();
 	}
 }
 
@@ -276,20 +289,64 @@ void requestPackets(){
 	}
 
 }
-void processReceivedPacket(){
-	//TODO process packets once received
+
+
+/**
+* Read and process incoming packets from the RF24 radio
+*/
+void handleIncomingPacket(){
+	resetReceiveBuffer();
+	resetSendBuffer();
+	radio.read(receiveBuffer, RECEIVE_BUFFER_SIZE);
+	processReceivedPacket();
 }
 
 
 /**
-* Send an acknowledgment packet to the base station
+* Respond to the latest incoming packet
+* The packet must already be read into the received buffer
 */
-void acknowledgeRequest(char c){
-	radio.stopListening();
+void processReceivedPacket(){
+	char unitID = fromReceiveBuffer();
 	
-	radio.openWritingPipe(BASE_PIPE);
+	// Only accept commands from the coordinator (UNIT 0)
+	char packetID = fromReceiveBuffer();
 	
-	
+	switch(packetID){
+		case NETWORK_JOIN_NOTIFIER:
+		processNetworkJoin(unitID);
+		break;
+		
+		case DATA_PACKET_RESPONSE
+		processDataPacket(unitID);
+		break;
+		
+		case SOUND_NOTIFICATION:
+		handleSoundNotification(unitID);
+		break;
+		
+		case MOTION_NOTIFICATION:
+		handleMotionNotification(unitID);
+		break;
+	}
+}
+
+
+/**
+* Tell the base station that a sound warning has been detected
+*/
+void handleSoundNotification(int unitID){
+	Serial.print("SOUND: Unit ");
+	Serial.println(unitID);
+}
+
+
+/**
+* Tell the base station that a motion warning has been detected
+*/
+void handleMotionNotification(int unitID){
+	Serial.print("MOTION: Unit ");
+	Serial.println(unitID);
 }
 
 
@@ -362,38 +419,52 @@ void resetRoutingTable(){
 
 /**
 * Obtain readings from all of the Lurker's sensors
+* Temperature, humidity, and light are sampled periodically
+* Sound and motion are polled for presence detection
+*
+* Results are saved as global variables
 */
 void checkSensors(){
-	checkTemperature();
-	checkHumidity();
-	checkLight();
+	// Periodically check climate sensors
+	if ((millis() - timeOfSample) > SAMPLE_PERIOD){
+		checkTemperature();
+		checkHumidity();
+		checkLight();
+	}
+	
+	// Poll presence sensors
 	checkSound();
 	checkMovement();
 }
 
 
 /**
-* Take a temperature reading.
+* Take a temperature reading
+* Reading is saved as a shifted decimal integer (12.34 => 1234)
 */
 void checkTemperature(){
+	float temp;
 	tempSensor.requestTemperatures();
-	temperature = tempSensor.getTempCByIndex(0);
+	temp = tempSensor.getTempCByIndex(0);
+	temperature = floatToInt(temp, 2);
 }
 
 
 /**
 * Check the relative humidity sensor.
-* Output given as a percentage (float)
+* Output given as a shifted decimal integer (12.34 => 1234)
 * The DHT11 takes up to 2 seconds to deliver a response.
 */
 void checkHumidity(){
-	humidity = humiditySensor.readHumidity();
+	float hum;
+	hum = humiditySensor.readHumidity();
+	humidity = floatToInt(hum, 2);
 }
 
 
 /**
 * Check the light level hitting the sensor.
-* Values are in lux.
+* Illuminance saved in lux as an integer
 */
 void checkLight(){
 	illuminance = lightSensor.GetLightIntensity();
@@ -402,27 +473,65 @@ void checkLight(){
 
 /**
 * Check if the sound level threshold has been exceeded
+* A cool-off period starts each time the sound alarm is tripped.
+* The coordinator is notified of each alert.
 */
 void checkSound(){
-	//TODO check if sound level threshold has been exceeded
+	// Only check the noise alarm if the cool-off has been exceeded
+	if((millis() - timeOfLastNoise) > NOISE_COOLOFF){
+		
+		// Check the noise level
+		if (digitalRead(MIC_DIGITAL_PIN) == SOUND_OVER_THRESHOLD){
+			
+			// Noise trigger exceeded, send a notification and start the cool-off
+			noiseTriggered = true;
+			timeOfLastNoise = millis();
+			sendSoundNotification();
+			
+			}else{
+			// No alarm; is fine
+			noiseTriggered = false;
+		}
+	}
+}
+
+
+/**
+* Notify the coordinator that the sound alarm has been tripped
+*/
+void sendSoundNotification(){
+	//TODO Redo sound alart to use serial
 }
 
 
 /**
 * Check the PIR sensor for detected movement
 * The sensor will output HIGH when motion is detected.
-* Output will fall back to LOW after a set delay time (adjustable on the sensor)
-* The delay timer is reset with each detection; i.e. The output will be high so long as motion is detected + the delay.
+* Detections will hold the detection status HIGH until the cool-down has lapsed (default: 60s)
 */
 void checkMovement(){
-	movementDetected = digitalRead(PIR_PIN);
-	
-	// If motion detected, reset the movement timer
-	if (movementDetected == MOVEMENT_DETECTED){
-		timeSinceLastMovement = 0;
-		timeOfLastMovement = millis();
+	// Only check the noise alarm if the cool-off has been exceeded
+	if((millis() - timeOfLastMovement) > MOTION_COOLOFF){
+		
+		// Check the noise level
+		if (digitalRead(MOTION_PIN) == MOVEMENT_DETECTED){
+			
+			// Noise trigger exceeded, send a notification and start the cool-off
+			movementDetected = true;
+			timeOfLastMovement = millis();
+			sendMotionNotification();
+			
+			}else{
+			// No alarm; is fine
+			movementDetected = false;
+		}
 	}
-	else{
-		timeSinceLastMovement = millis() - timeOfLastMovement;
-	}
+}
+
+
+/**
+* Alert the coordinator that motion has been detected
+*/
+void sendMotionNotification(){
+	//TODO Redo motion notification to use serial
 }

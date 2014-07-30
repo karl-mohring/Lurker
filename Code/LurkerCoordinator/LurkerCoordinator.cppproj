@@ -5,7 +5,7 @@
     <ProjectVersion>6.1</ProjectVersion>
     <ToolchainName>com.Atmel.AVRGCC8.CPP</ToolchainName>
     <ProjectGuid>{e324ce39-c2d1-4df7-a18f-fdc0859e0e1f}</ProjectGuid>
-    <avrdevice>atmega32u4</avrdevice>
+    <avrdevice>atmega328p</avrdevice>
     <avrdeviceseries>none</avrdeviceseries>
     <OutputType>Executable</OutputType>
     <Language>CPP</Language>
@@ -28,15 +28,15 @@
     <BootSegment>0</BootSegment>
     <AsfFrameworkConfig>
       <framework-data>
-  <options />
-  <configurations />
-  <files />
-  <documentation help="" />
-  <offline-documentation help="" />
-  <dependencies>
-    <content-extension eid="atmel.asf" uuidref="Atmel.ASF" version="3.6.0" />
-  </dependencies>
-</framework-data>
+        <options />
+        <configurations />
+        <files />
+        <documentation help="" />
+        <offline-documentation help="" />
+        <dependencies>
+          <content-extension eid="atmel.asf" uuidref="Atmel.ASF" version="3.6.0" />
+        </dependencies>
+      </framework-data>
     </AsfFrameworkConfig>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
@@ -50,12 +50,8 @@
         <avrgcc.compiler.general.ChangeDefaultBitFieldUnsigned>True</avrgcc.compiler.general.ChangeDefaultBitFieldUnsigned>
         <avrgcc.compiler.symbols.DefSymbols>
           <ListValues>
-            <Value>__AVR_ATmega32u4__</Value>
-            <Value>__AVR_ATmega32U4__</Value>
-            <Value>USB_VID=0x2341</Value>
-            <Value>USB_PID=0x8036</Value>
-            <Value>USB_MANUFACTURER=</Value>
-            <Value>USB_PRODUCT="\"Arduino Leonardo\""</Value>
+            <Value>__AVR_ATmega328p__</Value>
+            <Value>__AVR_ATmega328P__</Value>
             <Value>ARDUINO=101</Value>
             <Value>ARDUINO_MAIN</Value>
             <Value>F_CPU=16000000L</Value>
@@ -66,7 +62,7 @@
         <avrgcc.compiler.directories.IncludePaths>
           <ListValues>
             <Value>c:\Program Files (x86)\Arduino\hardware\arduino\avr\cores\arduino</Value>
-            <Value>c:\Program Files (x86)\Arduino\hardware\arduino\avr\variants\leonardo</Value>
+            <Value>c:\Program Files (x86)\Arduino\hardware\arduino\avr\variants\eightanaloginputs</Value>
             <Value>e:\Dropbox\Projects\libraries\IRremote</Value>
             <Value>e:\Dropbox\Projects\libraries\IRremote\utility</Value>
             <Value>c:\Program Files (x86)\Arduino\hardware\arduino\avr\libraries\SPI</Value>
@@ -103,12 +99,8 @@
         <avrgcccpp.compiler.general.ChangeDefaultBitFieldUnsigned>True</avrgcccpp.compiler.general.ChangeDefaultBitFieldUnsigned>
         <avrgcccpp.compiler.symbols.DefSymbols>
           <ListValues>
-            <Value>__AVR_ATmega32u4__</Value>
-            <Value>__AVR_ATmega32U4__</Value>
-            <Value>USB_VID=0x2341</Value>
-            <Value>USB_PID=0x8036</Value>
-            <Value>USB_MANUFACTURER=</Value>
-            <Value>USB_PRODUCT="\"Arduino Leonardo\""</Value>
+            <Value>__AVR_ATmega328p__</Value>
+            <Value>__AVR_ATmega328P__</Value>
             <Value>ARDUINO=101</Value>
             <Value>ARDUINO_MAIN</Value>
             <Value>F_CPU=16000000L</Value>
@@ -119,7 +111,7 @@
         <avrgcccpp.compiler.directories.IncludePaths>
           <ListValues>
             <Value>c:\Program Files (x86)\Arduino\hardware\arduino\avr\cores\arduino</Value>
-            <Value>c:\Program Files (x86)\Arduino\hardware\arduino\avr\variants\leonardo</Value>
+            <Value>c:\Program Files (x86)\Arduino\hardware\arduino\avr\variants\eightanaloginputs</Value>
             <Value>e:\Dropbox\Projects\libraries\IRremote</Value>
             <Value>e:\Dropbox\Projects\libraries\IRremote\utility</Value>
             <Value>c:\Program Files (x86)\Arduino\hardware\arduino\avr\libraries\SPI</Value>
@@ -170,12 +162,8 @@
         <avrgcc.compiler.general.ChangeDefaultBitFieldUnsigned>True</avrgcc.compiler.general.ChangeDefaultBitFieldUnsigned>
         <avrgcc.compiler.symbols.DefSymbols>
           <ListValues>
-            <Value>__AVR_ATmega32u4__</Value>
-            <Value>__AVR_ATmega32U4__</Value>
-            <Value>USB_VID=0x2341</Value>
-            <Value>USB_PID=0x8036</Value>
-            <Value>USB_MANUFACTURER=</Value>
-            <Value>USB_PRODUCT="\"Arduino Leonardo\""</Value>
+            <Value>__AVR_ATmega328p__</Value>
+            <Value>__AVR_ATmega328P__</Value>
             <Value>ARDUINO=101</Value>
             <Value>ARDUINO_MAIN</Value>
             <Value>F_CPU=16000000L</Value>
@@ -186,7 +174,7 @@
         <avrgcc.compiler.directories.IncludePaths>
           <ListValues>
             <Value>c:\Program Files (x86)\Arduino\hardware\arduino\avr\cores\arduino</Value>
-            <Value>c:\Program Files (x86)\Arduino\hardware\arduino\avr\variants\leonardo</Value>
+            <Value>c:\Program Files (x86)\Arduino\hardware\arduino\avr\variants\eightanaloginputs</Value>
             <Value>e:\Dropbox\Projects\libraries\IRremote</Value>
             <Value>e:\Dropbox\Projects\libraries\IRremote\utility</Value>
             <Value>c:\Program Files (x86)\Arduino\hardware\arduino\avr\libraries\SPI</Value>
@@ -223,12 +211,8 @@
         <avrgcccpp.compiler.general.ChangeDefaultBitFieldUnsigned>True</avrgcccpp.compiler.general.ChangeDefaultBitFieldUnsigned>
         <avrgcccpp.compiler.symbols.DefSymbols>
           <ListValues>
-            <Value>__AVR_ATmega32u4__</Value>
-            <Value>__AVR_ATmega32U4__</Value>
-            <Value>USB_VID=0x2341</Value>
-            <Value>USB_PID=0x8036</Value>
-            <Value>USB_MANUFACTURER=</Value>
-            <Value>USB_PRODUCT="\"Arduino Leonardo\""</Value>
+            <Value>__AVR_ATmega328p__</Value>
+            <Value>__AVR_ATmega328P__</Value>
             <Value>ARDUINO=101</Value>
             <Value>ARDUINO_MAIN</Value>
             <Value>F_CPU=16000000L</Value>
@@ -239,7 +223,7 @@
         <avrgcccpp.compiler.directories.IncludePaths>
           <ListValues>
             <Value>c:\Program Files (x86)\Arduino\hardware\arduino\avr\cores\arduino</Value>
-            <Value>c:\Program Files (x86)\Arduino\hardware\arduino\avr\variants\leonardo</Value>
+            <Value>c:\Program Files (x86)\Arduino\hardware\arduino\avr\variants\eightanaloginputs</Value>
             <Value>e:\Dropbox\Projects\libraries\IRremote</Value>
             <Value>e:\Dropbox\Projects\libraries\IRremote\utility</Value>
             <Value>c:\Program Files (x86)\Arduino\hardware\arduino\avr\libraries\SPI</Value>
