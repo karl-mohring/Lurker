@@ -1,5 +1,5 @@
  \
- C:\Users\Leenix\AppData\Local\VMicro\Arduino\Builds\LurkerNano\leonardo\DHT\DHT.cpp.o:  \
+ C:\Users\Leenix\AppData\Local\VMicro\Arduino\Builds\LurkerNano\nano_atmega328\DHT\DHT.cpp.o:  \
  e:\Dropbox\Projects\libraries\DHT\DHT.cpp \
   e:\Dropbox\Projects\libraries\DHT\/DHT.h \
   c:\Program\ Files\ (x86)\Arduino\hardware\arduino\avr\cores\arduino/Arduino.h \
@@ -12,4 +12,5 @@
   c:\Program\ Files\ (x86)\Arduino\hardware\arduino\avr\cores\arduino/Printable.h \
   c:\Program\ Files\ (x86)\Arduino\hardware\arduino\avr\cores\arduino/new.h \
   c:\Program\ Files\ (x86)\Arduino\hardware\arduino\avr\cores\arduino/USBAPI.h \
-  c:\Program\ Files\ (x86)\Arduino\hardware\arduino\avr\variants\leonardo/pins_arduino.h
+  c:\Program\ Files\ (x86)\Arduino\hardware\arduino\avr\variants\eightanaloginputs/pins_arduino.h \
+  c:\Program\ Files\ (x86)\Arduino\hardware\arduino\avr\variants\eightanaloginputs/../standard/pins_arduino.h

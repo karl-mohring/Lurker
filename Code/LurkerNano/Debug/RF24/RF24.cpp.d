@@ -1,5 +1,5 @@
  \
- C:\Users\Leenix\AppData\Local\VMicro\Arduino\Builds\LurkerNano\leonardo\RF24\RF24.cpp.o:  \
+ C:\Users\Leenix\AppData\Local\VMicro\Arduino\Builds\LurkerNano\nano_atmega328\RF24\RF24.cpp.o:  \
  e:\Dropbox\Projects\libraries\RF24\RF24.cpp \
   e:\Dropbox\Projects\libraries\RF24\/nRF24L01.h \
   e:\Dropbox\Projects\libraries\RF24\/RF24_config.h \
@@ -13,7 +13,8 @@
   c:\Program\ Files\ (x86)\Arduino\hardware\arduino\avr\cores\arduino/Printable.h \
   c:\Program\ Files\ (x86)\Arduino\hardware\arduino\avr\cores\arduino/new.h \
   c:\Program\ Files\ (x86)\Arduino\hardware\arduino\avr\cores\arduino/USBAPI.h \
-  c:\Program\ Files\ (x86)\Arduino\hardware\arduino\avr\variants\leonardo/pins_arduino.h \
+  c:\Program\ Files\ (x86)\Arduino\hardware\arduino\avr\variants\eightanaloginputs/pins_arduino.h \
+  c:\Program\ Files\ (x86)\Arduino\hardware\arduino\avr\variants\eightanaloginputs/../standard/pins_arduino.h \
   c:\Program\ Files\ (x86)\Arduino\hardware\arduino\avr\libraries\SPI/SPI.h \
   e:\Dropbox\Projects\libraries\RF24\/RF24.h \
   e:\Dropbox\Projects\libraries\RF24/RF24_config.h

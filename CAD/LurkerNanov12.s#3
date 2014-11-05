@@ -3619,7 +3619,6 @@ DIN A4, landscape with location and doc. field</description>
 </instance>
 <instance part="SW1" gate="G$1" x="175.26" y="106.68" smashed="yes" rot="R270">
 <attribute name="NAME" x="172.72" y="113.03" size="1.778" layer="95"/>
-<attribute name="VALUE" x="172.593" y="115.316" size="1.778" layer="96"/>
 </instance>
 </instances>
 <busses>

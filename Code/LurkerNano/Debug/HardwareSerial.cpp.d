@@ -1,5 +1,5 @@
  \
- C:\Users\Leenix\AppData\Local\VMicro\Arduino\Builds\LurkerNano\leonardo\HardwareSerial.cpp.o:  \
+ C:\Users\Leenix\AppData\Local\VMicro\Arduino\Builds\LurkerNano\nano_atmega328\HardwareSerial.cpp.o:  \
  c:\Program\ Files\ (x86)\Arduino\hardware\arduino\avr\cores\arduino\HardwareSerial.cpp \
   c:\Program\ Files\ (x86)\Arduino\hardware\arduino\avr\cores\arduino\/Arduino.h \
   c:\Program\ Files\ (x86)\Arduino\hardware\arduino\avr\cores\arduino\/binary.h \
@@ -11,7 +11,8 @@
   c:\Program\ Files\ (x86)\Arduino\hardware\arduino\avr\cores\arduino\/Printable.h \
   c:\Program\ Files\ (x86)\Arduino\hardware\arduino\avr\cores\arduino/new.h \
   c:\Program\ Files\ (x86)\Arduino\hardware\arduino\avr\cores\arduino\/USBAPI.h \
-  c:\Program\ Files\ (x86)\Arduino\hardware\arduino\avr\variants\leonardo/pins_arduino.h \
+  c:\Program\ Files\ (x86)\Arduino\hardware\arduino\avr\variants\eightanaloginputs/pins_arduino.h \
+  c:\Program\ Files\ (x86)\Arduino\hardware\arduino\avr\variants\eightanaloginputs/../standard/pins_arduino.h \
   c:\Program\ Files\ (x86)\Arduino\hardware\arduino\avr\cores\arduino\/HardwareSerial.h \
   c:\Program\ Files\ (x86)\Arduino\hardware\arduino\avr\cores\arduino\/HardwareSerial_private.h \
   c:\Program\ Files\ (x86)\Arduino\hardware\arduino\avr\cores\arduino\/wiring_private.h \

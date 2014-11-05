@@ -3474,7 +3474,7 @@ DIN A4, landscape with location and doc. field</description>
 <part name="GND12" library="supply1" deviceset="GND" device=""/>
 <part name="P+9" library="supply1" deviceset="V+" device=""/>
 <part name="R7" library="SparkFun-Resistors" deviceset="RESISTOR" device="1206" value="4K7"/>
-<part name="SW1" library="adafruit" deviceset="SPST_TACT" device="-EVQQ2"/>
+<part name="SW1" library="adafruit" deviceset="SPST_TACT" device="-EVQQ2" value="TACT"/>
 </parts>
 <sheets>
 <sheet>
@@ -3617,7 +3617,10 @@ DIN A4, landscape with location and doc. field</description>
 <attribute name="NAME" x="92.4814" y="59.69" size="1.778" layer="95" rot="R90"/>
 <attribute name="VALUE" x="97.282" y="59.69" size="1.778" layer="96" rot="R90"/>
 </instance>
-<instance part="SW1" gate="G$1" x="175.26" y="106.68" rot="R270"/>
+<instance part="SW1" gate="G$1" x="175.26" y="106.68" smashed="yes" rot="R270">
+<attribute name="NAME" x="172.72" y="113.03" size="1.778" layer="95"/>
+<attribute name="VALUE" x="172.593" y="115.316" size="1.778" layer="96"/>
+</instance>
 </instances>
 <busses>
 </busses>

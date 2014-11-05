@@ -3889,14 +3889,16 @@ DIN A4, landscape with location and doc. field</description>
 <pinref part="GND11" gate="1" pin="GND"/>
 </segment>
 <segment>
-<wire x1="170.18" y1="106.68" x2="167.64" y2="106.68" width="0.2032" layer="91"/>
 <wire x1="167.64" y1="106.68" x2="167.64" y2="101.6" width="0.2032" layer="91"/>
 <pinref part="GND13" gate="1" pin="GND"/>
+<pinref part="S2" gate="G$1" pin="1"/>
+<wire x1="170.18" y1="106.68" x2="167.64" y2="106.68" width="0.2032" layer="91"/>
 </segment>
 <segment>
-<wire x1="170.18" y1="73.66" x2="167.64" y2="73.66" width="0.2032" layer="91"/>
 <wire x1="167.64" y1="73.66" x2="167.64" y2="68.58" width="0.2032" layer="91"/>
 <pinref part="GND14" gate="1" pin="GND"/>
+<pinref part="S1" gate="G$1" pin="1"/>
+<wire x1="167.64" y1="73.66" x2="170.18" y2="73.66" width="0.2032" layer="91"/>
 </segment>
 <segment>
 <pinref part="BATTERY" gate="G$1" pin="1"/>
@@ -4187,13 +4189,6 @@ DIN A4, landscape with location and doc. field</description>
 <approved hash="104,1,40.64,160.02,U1,VIN,V+,,,"/>
 <approved hash="104,1,109.22,160.02,RF1,VCC,+3V3,,,"/>
 <approved hash="104,1,78.74,58.42,TEMP,VDD,+5V,,,"/>
-<approved hash="115,1,169.503,158.945,IR-TX,,,,,"/>
-<approved hash="115,1,199.983,158.945,IR-RX,,,,,"/>
-<approved hash="115,1,41.91,71.4417,LED1,,,,,"/>
-<approved hash="115,1,41.91,61.2817,LED2,,,,,"/>
-<approved hash="115,1,41.91,51.1217,LED3,,,,,"/>
-<approved hash="115,1,130.071,89.431,FRAME2,,,,,"/>
-<approved hash="115,1,127.593,28.1347,BATTERY,,,,,"/>
 </errors>
 </schematic>
 </drawing>

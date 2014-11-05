@@ -1,5 +1,5 @@
  \
- C:\Users\Leenix\AppData\Local\VMicro\Arduino\Builds\LurkerNano\leonardo\Wire\Wire.cpp.o:  \
+ C:\Users\Leenix\AppData\Local\VMicro\Arduino\Builds\LurkerNano\nano_atmega328\Wire\Wire.cpp.o:  \
  c:\Program\ Files\ (x86)\Arduino\hardware\arduino\avr\libraries\Wire\Wire.cpp \
   c:\Program\ Files\ (x86)\Arduino\hardware\arduino\avr\libraries\Wire\utility/twi.h \
   c:\Program\ Files\ (x86)\Arduino\hardware\arduino\avr\libraries\Wire\/Wire.h \

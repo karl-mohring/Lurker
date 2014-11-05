@@ -1,5 +1,5 @@
  \
- C:\Users\Leenix\AppData\Local\VMicro\Arduino\Builds\LurkerNano\leonardo\IRremote\IRremote.cpp.o:  \
+ C:\Users\Leenix\AppData\Local\VMicro\Arduino\Builds\LurkerNano\nano_atmega328\IRremote\IRremote.cpp.o:  \
  e:\Dropbox\Projects\libraries\IRremote\IRremote.cpp \
   e:\Dropbox\Projects\libraries\IRremote\/IRremote.h \
   e:\Dropbox\Projects\libraries\IRremote\/IRremoteInt.h \
@@ -13,4 +13,5 @@
   c:\Program\ Files\ (x86)\Arduino\hardware\arduino\avr\cores\arduino/Printable.h \
   c:\Program\ Files\ (x86)\Arduino\hardware\arduino\avr\cores\arduino/new.h \
   c:\Program\ Files\ (x86)\Arduino\hardware\arduino\avr\cores\arduino/USBAPI.h \
-  c:\Program\ Files\ (x86)\Arduino\hardware\arduino\avr\variants\leonardo/pins_arduino.h
+  c:\Program\ Files\ (x86)\Arduino\hardware\arduino\avr\variants\eightanaloginputs/pins_arduino.h \
+  c:\Program\ Files\ (x86)\Arduino\hardware\arduino\avr\variants\eightanaloginputs/../standard/pins_arduino.h

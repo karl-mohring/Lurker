@@ -19,35 +19,48 @@ extern "C" void __cxa_pure_virtual() {;}
 
 //
 //
-void initialiseRadio();
-void initialiseSensors();
-void startEnumeration();
-void checkSerial();
-void processNetworkJoin(char unitID);
-void confirmNetworkJoin(char unitID);
-void transmitChar(char unitID, char message);
-int findRoutingEntry(char unitID);
-void checkRadio();
-void requestPackets();
-void handleIncomingPacket();
-void processReceivedPacket();
-void handleSoundNotification(int unitID);
-void handleMotionNotification(int unitID);
 void toSendBuffer(char c);
 void resetSendBuffer();
 char fromReceiveBuffer();
 void resetReceiveBuffer();
 void addRoutingTableEntry(char unitID);
 void resetRoutingTable();
+int findRoutingEntry(char unitID);
+int floatToInt(float num, int decimalShift);
+void initialiseRadio();
+void startEnumeration();
+void transmitChar(char unitID, char message);
+void checkRadio();
+void requestPackets();
+void confirmNetworkJoin(char unitID);
+void processNetworkJoin(char unitID);
+void handleIncomingPacket();
+void processReceivedPacket();
+void processDataPacket(int unitID);
+float decodeData(char dataCode);
+void checkSerial();
+void printOpeningMessage();
+void printCalibrationMessage();
+void printWaitingMessage();
+void printFinishedCalibration();
+void printSensorData();
+void printDataPacket();
+void sendSoundNotification();
+void sendMotionNotification();
+void handleSoundNotification(int unitID);
+void handleMotionNotification(int unitID);
+void initialiseSensors();
+void initialiseLightSensor();
+void initialiseMotion();
+void initialiseSound();
 void checkSensors();
 void checkTemperature();
 void checkHumidity();
 void checkLight();
+int getSoundLevel(int samplePeriod);
 void checkSound();
-void sendSoundNotification();
 void checkMovement();
-void sendMotionNotification();
 
 #include "c:\Program Files (x86)\Arduino\hardware\arduino\avr\variants\eightanaloginputs\pins_arduino.h" 
 #include "c:\Program Files (x86)\Arduino\hardware\arduino\avr\cores\arduino\arduino.h"
-#include "E:\Dropbox\Projects\Lurker\LurkerCoordinator\LurkerCoordinator.ino"
+#include "E:\Dropbox\Projects\Lurker\Code\LurkerCoordinator\LurkerCoordinator.ino"

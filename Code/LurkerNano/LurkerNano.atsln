@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 11.00
 # Atmel Studio Solution File, Format Version 11.00
-Project("{E66E83B9-2572-4076-B26E-6BE79FF3018A}") = "LurkerNano", "LurkerNano.cppproj", "{07B459B4-8D76-4638-BC6D-A459BA2D616B}"
+Project("{E66E83B9-2572-4076-B26E-6BE79FF3018A}") = "LurkerNano", "LurkerNano.cppproj", "{08F147E1-C338-4D7C-85E4-79B690ECDA28}"
 EndProject
 Project("{E66E83B9-2572-4076-B26E-6BE79FF3018A}") = "RadioTest", "..\RadioTest\RadioTest.cppproj", "{E157DA33-7362-4999-A540-211FF20F1620}"
 EndProject
@@ -19,10 +19,10 @@ Global
 		Release|AVR = Release|AVR
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{07B459B4-8D76-4638-BC6D-A459BA2D616B}.Debug|AVR.ActiveCfg = Debug|AVR
-		{07B459B4-8D76-4638-BC6D-A459BA2D616B}.Debug|AVR.Build.0 = Debug|AVR
-		{07B459B4-8D76-4638-BC6D-A459BA2D616B}.Release|AVR.ActiveCfg = Release|AVR
-		{07B459B4-8D76-4638-BC6D-A459BA2D616B}.Release|AVR.Build.0 = Release|AVR
+		{08F147E1-C338-4D7C-85E4-79B690ECDA28}.Debug|AVR.ActiveCfg = Debug|AVR
+		{08F147E1-C338-4D7C-85E4-79B690ECDA28}.Debug|AVR.Build.0 = Debug|AVR
+		{08F147E1-C338-4D7C-85E4-79B690ECDA28}.Release|AVR.ActiveCfg = Release|AVR
+		{08F147E1-C338-4D7C-85E4-79B690ECDA28}.Release|AVR.Build.0 = Release|AVR
 		{E157DA33-7362-4999-A540-211FF20F1620}.Debug|AVR.ActiveCfg = Debug|AVR
 		{E157DA33-7362-4999-A540-211FF20F1620}.Debug|AVR.Build.0 = Debug|AVR
 		{E157DA33-7362-4999-A540-211FF20F1620}.Release|AVR.ActiveCfg = Release|AVR
