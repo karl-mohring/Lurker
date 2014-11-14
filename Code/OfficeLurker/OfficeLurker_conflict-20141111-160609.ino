@@ -10,7 +10,7 @@
 
 using namespace ArduinoJson::Generator;
 
-#define UNIT_ID 2
+#define UNIT_ID 1
 
 //////////////////////////////////////////////////////////////////////////
 //Communication
@@ -36,7 +36,7 @@ enum COMM_CODES{
 	LIGHT_NOTIFICATION = 'l',
 	
 	PACKET_START_CHARACTER = '#',
-	PACKET_END_CHARACTER = '$',
+	PACKET_END_CHARACTER = 0x0A,
 	SERIAL_DIVIDER = ','
 };
 
@@ -117,36 +117,28 @@ void loop()
 // Communication - Serial
 
 void printOpeningMessage(){
-	Serial.print("==== Office Lurker - Node ");
+	Serial.print("==== Office Lurker - Node #");
 	Serial.print(UNIT_ID);
 	Serial.print(" ====\n");
 }
 
 void printSensorData(){
-	JsonObject<7> entry;
-		
-	entry["id"] = "lurker2";
+	JsonObject<6> entry;
 	entry["timestamp"] = timeOfSample;
-	entry["air_temp"] = float(airTemperature)/100;
-	entry["surface_temp"] = float(deskTemperature)/100;
+	entry["airTemp"] = float(airTemperature)/100;
+	entry["surfaceTemp"] = float(deskTemperature)/100;
 	entry["humidity"] = float(humidity)/100;
 	entry["illuminance"] = illuminance;
-	entry["noise_level"] = noiseLevel;
+	entry["noiseLevel"] = noiseLevel;
 
-
-	Serial.print(char(PACKET_START_CHARACTER));
+	Serial.print(PACKET_START_CHARACTER);
 	Serial.print(entry);
-	Serial.println(char(PACKET_END_CHARACTER));
+	Serial.print(PACKET_END_CHARACTER);
 }
 
 void printMotionEvent(){
-	JsonObject<2> event;	
-	event["id"] = "lurker2";
-	event["motion"] = 1;
-	
-	Serial.print(char(PACKET_START_CHARACTER));
-	Serial.print(event);
-	Serial.println(char(PACKET_END_CHARACTER));
+	Serial.print("Motion detected - ");
+	Serial.println(millis());
 }
 
 void printCalibrationMessage(){

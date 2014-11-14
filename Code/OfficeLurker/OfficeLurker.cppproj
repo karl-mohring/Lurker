@@ -28,15 +28,15 @@
     <BootSegment>0</BootSegment>
     <AsfFrameworkConfig>
       <framework-data>
-  <options />
-  <configurations />
-  <files />
-  <documentation help="" />
-  <offline-documentation help="" />
-  <dependencies>
-    <content-extension eid="atmel.asf" uuidref="Atmel.ASF" version="3.6.0" />
-  </dependencies>
-</framework-data>
+        <options />
+        <configurations />
+        <files />
+        <documentation help="" />
+        <offline-documentation help="" />
+        <dependencies>
+          <content-extension eid="atmel.asf" uuidref="Atmel.ASF" version="3.6.0" />
+        </dependencies>
+      </framework-data>
     </AsfFrameworkConfig>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
@@ -54,7 +54,7 @@
             <Value>__AVR_ATmega328P__</Value>
             <Value>ARDUINO=101</Value>
             <Value>ARDUINO_MAIN</Value>
-            <Value>F_CPU=16000000L</Value>
+            <Value>F_CPU=8000000L</Value>
             <Value>__AVR__</Value>
             <Value>__cplusplus</Value>
           </ListValues>
@@ -73,6 +73,8 @@
             <Value>e:\Dropbox\Projects\libraries\OneWire\utility</Value>
             <Value>e:\Dropbox\Projects\libraries\DHT</Value>
             <Value>e:\Dropbox\Projects\libraries\DHT\utility</Value>
+            <Value>e:\Dropbox\Projects\libraries\JSON</Value>
+            <Value>e:\Dropbox\Projects\libraries\JSON\utility</Value>
             <Value>e:\Dropbox\Projects\libraries\TSL2561</Value>
             <Value>e:\Dropbox\Projects\libraries\TSL2561\utility</Value>
             <Value>c:\Program Files (x86)\Arduino\libraries</Value>
@@ -99,7 +101,7 @@
             <Value>__AVR_ATmega328P__</Value>
             <Value>ARDUINO=101</Value>
             <Value>ARDUINO_MAIN</Value>
-            <Value>F_CPU=16000000L</Value>
+            <Value>F_CPU=8000000L</Value>
             <Value>__AVR__</Value>
             <Value>__cplusplus</Value>
           </ListValues>
@@ -118,6 +120,8 @@
             <Value>e:\Dropbox\Projects\libraries\OneWire\utility</Value>
             <Value>e:\Dropbox\Projects\libraries\DHT</Value>
             <Value>e:\Dropbox\Projects\libraries\DHT\utility</Value>
+            <Value>e:\Dropbox\Projects\libraries\JSON</Value>
+            <Value>e:\Dropbox\Projects\libraries\JSON\utility</Value>
             <Value>e:\Dropbox\Projects\libraries\TSL2561</Value>
             <Value>e:\Dropbox\Projects\libraries\TSL2561\utility</Value>
             <Value>c:\Program Files (x86)\Arduino\libraries</Value>
@@ -142,6 +146,11 @@
         <avrgcccpp.assembler.debugging.DebugLevel>Default (-Wa,-g)</avrgcccpp.assembler.debugging.DebugLevel>
       </AvrGccCpp>
     </ToolchainSettings>
+    <VisualMicroSettings>
+      <VisualMicroSettings xmlns="">
+        <arduino.upload.port>COM6</arduino.upload.port>
+      </VisualMicroSettings>
+    </VisualMicroSettings>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <ToolchainSettings>
@@ -158,7 +167,7 @@
             <Value>__AVR_ATmega328P__</Value>
             <Value>ARDUINO=101</Value>
             <Value>ARDUINO_MAIN</Value>
-            <Value>F_CPU=16000000L</Value>
+            <Value>F_CPU=8000000L</Value>
             <Value>__AVR__</Value>
             <Value>__cplusplus</Value>
           </ListValues>
@@ -177,6 +186,8 @@
             <Value>e:\Dropbox\Projects\libraries\OneWire\utility</Value>
             <Value>e:\Dropbox\Projects\libraries\DHT</Value>
             <Value>e:\Dropbox\Projects\libraries\DHT\utility</Value>
+            <Value>e:\Dropbox\Projects\libraries\JSON</Value>
+            <Value>e:\Dropbox\Projects\libraries\JSON\utility</Value>
             <Value>e:\Dropbox\Projects\libraries\TSL2561</Value>
             <Value>e:\Dropbox\Projects\libraries\TSL2561\utility</Value>
             <Value>c:\Program Files (x86)\Arduino\libraries</Value>
@@ -203,7 +214,7 @@
             <Value>__AVR_ATmega328P__</Value>
             <Value>ARDUINO=101</Value>
             <Value>ARDUINO_MAIN</Value>
-            <Value>F_CPU=16000000L</Value>
+            <Value>F_CPU=8000000L</Value>
             <Value>__AVR__</Value>
             <Value>__cplusplus</Value>
           </ListValues>
@@ -222,6 +233,8 @@
             <Value>e:\Dropbox\Projects\libraries\OneWire\utility</Value>
             <Value>e:\Dropbox\Projects\libraries\DHT</Value>
             <Value>e:\Dropbox\Projects\libraries\DHT\utility</Value>
+            <Value>e:\Dropbox\Projects\libraries\JSON</Value>
+            <Value>e:\Dropbox\Projects\libraries\JSON\utility</Value>
             <Value>e:\Dropbox\Projects\libraries\TSL2561</Value>
             <Value>e:\Dropbox\Projects\libraries\TSL2561\utility</Value>
             <Value>c:\Program Files (x86)\Arduino\libraries</Value>
@@ -246,6 +259,11 @@
         <avrgcccpp.assembler.debugging.DebugLevel>Default (-Wa,-g)</avrgcccpp.assembler.debugging.DebugLevel>
       </AvrGccCpp>
     </ToolchainSettings>
+    <VisualMicroSettings>
+      <VisualMicroSettings xmlns="">
+        <arduino.upload.port>COM6</arduino.upload.port>
+      </VisualMicroSettings>
+    </VisualMicroSettings>
   </PropertyGroup>
   <ItemGroup>
     <None Include="OfficeLurker.ino">
