@@ -15,6 +15,8 @@ String unitID = unitClass + UNIT_NUMBER;
 
 //////////////////////////////////////////////////////////////////////////
 
+const long SAMPLE_INTERVAL = 20000;	// Sample interval in ms
+
 // DS18B20 Temperature Probe
 #define TEMPERATURE_PIN 7
 
@@ -25,19 +27,16 @@ String unitID = unitClass + UNIT_NUMBER;
 // PIR Motion detector
 #define MOTION_PIN 2
 #define MOTION_INITIALISATION_TIME 2000 // Initialisation period in ms
-#define MOTION_COOLOFF 60000	//Cool off period in ms
+#define MOTION_COOLOFF SAMPLE_INTERVAL	//Cool off period in ms
 #define MOTION_CHECK_INTERVAL 100	// Period between motion detector checks in ms
 #define MOTION_DETECTED HIGH
-
-// Keyes mic
-#define MIC_PIN A0
 
 // Passive buzzer
 #define BUZZER_PIN 5
 
 // LEDs
-#define LED1 A1
-#define LED2 A2
+#define LED0 A1
+#define LED1 A2
 #define ON HIGH
 #define OFF LOW
 

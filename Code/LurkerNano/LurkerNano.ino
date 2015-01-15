@@ -16,6 +16,8 @@
 
 using namespace ArduinoJson::Generator;
 
+#define LURKER_VERSION 0.9
+
 //////////////////////////////////////////////////////////////////////////
 // Lurker Nano
 //
@@ -27,7 +29,6 @@ using namespace ArduinoJson::Generator;
 //	- Humidity
 //	- Illuminance
 //	- Motion
-//	- Sound Level
 //	- IR Receiver (not implemented)
 //
 // Actuators:
@@ -55,11 +56,12 @@ long illuminance;
 bool motionDetected;
 long timeOfLastMotion;
 
-// Sound Level
-int soundLevel;
 
 // Buzzer
 RF24 radio(CE_PIN, CSN_PIN);
+
+// Lights
+int leds[] = {LED0, LED1};
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -67,7 +69,6 @@ RF24 radio(CE_PIN, CSN_PIN);
 
 // Sample Timer
 SimpleTimer timer;
-const long SAMPLE_INTERVAL = 20000;	// Sample interval in ms
 int joinTimerID;
 int networkTimeoutTimerID;
 int printDataTimerID;
@@ -89,8 +90,7 @@ enum COMM_TAGS{
 	HUMIDITY_CODE = 'H',
 	ILLUMINANCE_CODE = 'I',
 	MOTION_CODE = 'M',
-	SOUND_CODE = 'S',
-	
+		
 	BUZZER_ON_CODE = 'B',
 	BUZZER_OFF_CODE = 'b',
 	
@@ -160,7 +160,6 @@ void printSensorData(){
 	data["humidity"] = humidity;
 	data["illuminance"] = illuminance;
 	data["motion"] = motionDetected;
-	data["sound"] = soundLevel;
 	
 	Serial.print(char(PACKET_START));
 	Serial.print(data);
@@ -320,10 +319,6 @@ void prepareDataPacket(){
 	
 	writeBuffer.write(MOTION_CODE);
 	writeBuffer.write(motionDetected);
-	writeBuffer.write(DIVIDER);
-	
-	writeBuffer.write(SOUND_CODE);
-	writeBuffer.writeInt(soundLevel);
 	writeBuffer.write(DIVIDER);
 	
 	writeBuffer.write(PACKET_END);
@@ -549,18 +544,6 @@ void initialiseMotion(){
 	Log.Debug("Motion started...\n");
 }
 
-
-/**
-* Initialise the sound level sensor
-*/
-void initialiseSound(){
-	pinMode(MIC_PIN, INPUT);
-	soundLevel = 0;
-	
-	Log.Debug("Sound level started...\n");
-}
-
-
 // Read
 
 
@@ -571,13 +554,11 @@ void readSensors(){
 	temperature = readTemperature();
 	humidity = readHumidity();
 	illuminance = readIlluminance();
-	soundLevel = readSoundLevel();
 	
 	Log.Debug("Temperature: %d\n", int((temperature)*100));
 	Log.Debug("Humidity: %d\n", int((humidity*100)));
 	Log.Debug("Illuminance: %d\n", illuminance);
 	Log.Debug("Motion: %T\n", motionDetected);
-	Log.Debug("Sound Level: %d\n", soundLevel);
 }
 
 
@@ -633,23 +614,18 @@ void readMotion(){
 			motionDetected = true;
 			timeOfLastMotion = millis();
 			
+			Log.Info("Motion detected");
+			switchLight(MOTION_LED, ON);
+			
 			}else{
 			// No alarm; is fine
 			motionDetected = false;
+			
+			switchLight(MOTION_LED, OFF);
 		}
 	}
 }
 
-
-/**
-* Take a sound level reading.
-*
-* Returns:
-*	Sound level as a 10-bit count
-*/
-int readSoundLevel(){
-	return analogRead(MIC_PIN);
-}
 
 //////////////////////////////////////////////////////////////////////////
 // Buzzer
@@ -692,11 +668,10 @@ void buzzerOff(){
 * Their default state is OFF
 */
 void initialiseLights(){
-	pinMode(LED1, OUTPUT);
-	switchLight(LED1, OFF);
-	
-	pinMode(LED2, OUTPUT);
-	switchLight(LED2, OFF);
+	for(int i = 0; i < sizeof(leds); i++){
+		pinMode(leds[i], OUTPUT);
+		switchLight(i, OFF);
+	}
 }
 
 
@@ -708,10 +683,12 @@ void initialiseLights(){
 *	lightPin - Pin location of the LED to be switched
 *	state - boolean state of the LED, high for ON.
 */
-void switchLight(int lightPin, bool state){
-	if (lightPin == LED1 || lightPin == LED2){
-		digitalWrite(lightPin, state);
-		Log.Debug("LED on pin %d - %T\n", lightPin, state);
+void switchLight(int ledNum, bool state){
+	if (ledNum < sizeof(leds)){
+		digitalWrite(leds[ledNum], state);
+	}
+
+		Log.Debug("LED%d on pin %d - %T\n", ledNum, leds[ledNum], state);
 	}
 }
 
