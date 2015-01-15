@@ -10,57 +10,54 @@
 
 #define __AVR_ATmega328p__
 #define __AVR_ATmega328P__
-#define ARDUINO 101
+#define ARDUINO 158
 #define ARDUINO_MAIN
 #define F_CPU 16000000L
 #define __AVR__
-#define __cplusplus
 extern "C" void __cxa_pure_virtual() {;}
 
 //
 //
-void toSendBuffer(char c);
-void toSendBuffer(int i);
-void resetSendBuffer();
-char fromReceiveBuffer();
-void resetReceiveBuffer();
-int floatToInt(float num, int decimalShift);
+void printSensorData();
+void checkSerial();
 void initialiseRadio();
-void checkRadio();
-void handleIncomingPacket();
-void processReceivedPacket();
-void checkNetwork();
-void attemptNetworkJoin();
+void joinNetwork();
+void resetNetworkConnection();
 void transmitJoinRequest();
 void transmitDataPacket();
+void transmitWriteBuffer();
+void prepareDataPacket();
+void checkRadio();
+void readRadioPacket();
+void handlePacket();
+void processNetworkJoin();
+void addUnitToNetwork(int unitNum);
+void processDataPacket();
+void sendACK();
+void processACK();
+void cleanRoutingTable();
 void transmitChar(char message);
-void sendSoundNotification();
-void sendMotionNotification();
-void printOpeningMessage();
-void printSensorData();
-void printMotionEvent();
-void printSoundEvent();
-void printNetworkTimeout();
-void printJoinRequest();
-void printJoinNotification();
-void printSentPacket();
-void printCalibrationMessage();
-void printWaitingMessage();
-void printFinishedCalibration();
 void initialiseSensors();
-void initialiseLightSensor();
+void initialiseTemperature();
+void initialiseHumidity();
+void initialiseIlluminaince();
 void initialiseMotion();
 void initialiseSound();
-void checkSensors();
-void checkTemperature();
-void checkHumidity();
-void checkLight();
-int getSoundLevel(int samplePeriod);
-void checkSound();
-void checkMovement();
+void readSensors();
+float readTemperature();
+float readHumidity();
+long readIlluminance();
+void readMotion();
+int readSoundLevel();
+void initialiseBuzzer();
+void buzzerOn();
+void buzzerOff();
+void initialiseLights();
+void switchLight(int lightPin, bool state);
 void enableWatchdog();
 void disableWatchdog();
 
 #include "c:\Program Files (x86)\Arduino\hardware\arduino\avr\variants\eightanaloginputs\pins_arduino.h" 
 #include "c:\Program Files (x86)\Arduino\hardware\arduino\avr\cores\arduino\arduino.h"
 #include "E:\Dropbox\Projects\Lurker\Code\LurkerNano\LurkerNano.ino"
+#include "E:\Dropbox\Projects\Lurker\Code\LurkerNano\settings.h"

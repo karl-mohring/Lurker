@@ -58,7 +58,6 @@ void checkTemperature();
 void checkHumidity();
 void checkLight();
 int getSoundLevel(int samplePeriod);
-void checkSound();
 void checkMovement();
 
 #include "c:\Program Files (x86)\Arduino\hardware\arduino\avr\variants\eightanaloginputs\pins_arduino.h" 

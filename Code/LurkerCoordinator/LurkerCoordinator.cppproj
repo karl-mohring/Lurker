@@ -79,6 +79,10 @@
             <Value>e:\Dropbox\Projects\libraries\BH1750FVI\utility</Value>
             <Value>e:\Dropbox\Projects\libraries\DHT</Value>
             <Value>e:\Dropbox\Projects\libraries\DHT\utility</Value>
+            <Value>e:\Dropbox\Projects\libraries\SimpleTimer</Value>
+            <Value>e:\Dropbox\Projects\libraries\SimpleTimer\utility</Value>
+            <Value>e:\Dropbox\Projects\libraries\JSON</Value>
+            <Value>e:\Dropbox\Projects\libraries\JSON\utility</Value>
             <Value>c:\Program Files (x86)\Arduino\libraries</Value>
             <Value>c:\Program Files (x86)\Arduino\hardware\arduino\avr\libraries</Value>
             <Value>C:\Program Files (x86)\Visual Micro\Visual Micro for Arduino\Micro Platforms\default\debuggers</Value>
@@ -128,6 +132,10 @@
             <Value>e:\Dropbox\Projects\libraries\BH1750FVI\utility</Value>
             <Value>e:\Dropbox\Projects\libraries\DHT</Value>
             <Value>e:\Dropbox\Projects\libraries\DHT\utility</Value>
+            <Value>e:\Dropbox\Projects\libraries\SimpleTimer</Value>
+            <Value>e:\Dropbox\Projects\libraries\SimpleTimer\utility</Value>
+            <Value>e:\Dropbox\Projects\libraries\JSON</Value>
+            <Value>e:\Dropbox\Projects\libraries\JSON\utility</Value>
             <Value>c:\Program Files (x86)\Arduino\libraries</Value>
             <Value>c:\Program Files (x86)\Arduino\hardware\arduino\avr\libraries</Value>
             <Value>C:\Program Files (x86)\Visual Micro\Visual Micro for Arduino\Micro Platforms\default\debuggers</Value>
@@ -152,7 +160,7 @@
     </ToolchainSettings>
     <VisualMicroSettings>
       <VisualMicroSettings>
-        <arduino.upload.port>COM15</arduino.upload.port>
+        <arduino.upload.port>COM3</arduino.upload.port>
       </VisualMicroSettings>
     </VisualMicroSettings>
   </PropertyGroup>
@@ -196,6 +204,10 @@
             <Value>e:\Dropbox\Projects\libraries\BH1750FVI\utility</Value>
             <Value>e:\Dropbox\Projects\libraries\DHT</Value>
             <Value>e:\Dropbox\Projects\libraries\DHT\utility</Value>
+            <Value>e:\Dropbox\Projects\libraries\SimpleTimer</Value>
+            <Value>e:\Dropbox\Projects\libraries\SimpleTimer\utility</Value>
+            <Value>e:\Dropbox\Projects\libraries\JSON</Value>
+            <Value>e:\Dropbox\Projects\libraries\JSON\utility</Value>
             <Value>c:\Program Files (x86)\Arduino\libraries</Value>
             <Value>c:\Program Files (x86)\Arduino\hardware\arduino\avr\libraries</Value>
             <Value>C:\Program Files (x86)\Visual Micro\Visual Micro for Arduino\Micro Platforms\default\debuggers</Value>
@@ -245,6 +257,10 @@
             <Value>e:\Dropbox\Projects\libraries\BH1750FVI\utility</Value>
             <Value>e:\Dropbox\Projects\libraries\DHT</Value>
             <Value>e:\Dropbox\Projects\libraries\DHT\utility</Value>
+            <Value>e:\Dropbox\Projects\libraries\SimpleTimer</Value>
+            <Value>e:\Dropbox\Projects\libraries\SimpleTimer\utility</Value>
+            <Value>e:\Dropbox\Projects\libraries\JSON</Value>
+            <Value>e:\Dropbox\Projects\libraries\JSON\utility</Value>
             <Value>c:\Program Files (x86)\Arduino\libraries</Value>
             <Value>c:\Program Files (x86)\Arduino\hardware\arduino\avr\libraries</Value>
             <Value>C:\Program Files (x86)\Visual Micro\Visual Micro for Arduino\Micro Platforms\default\debuggers</Value>
@@ -269,7 +285,7 @@
     </ToolchainSettings>
     <VisualMicroSettings>
       <VisualMicroSettings>
-        <arduino.upload.port>COM15</arduino.upload.port>
+        <arduino.upload.port>COM3</arduino.upload.port>
       </VisualMicroSettings>
     </VisualMicroSettings>
   </PropertyGroup>

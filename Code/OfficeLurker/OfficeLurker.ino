@@ -10,7 +10,9 @@
 
 using namespace ArduinoJson::Generator;
 
-#define UNIT_ID 2
+#define UNIT_ID 1
+String unit_class = "lurker";
+String unit_identifier = unit_class + UNIT_ID;
 
 //////////////////////////////////////////////////////////////////////////
 //Communication
@@ -63,7 +65,7 @@ Adafruit_TSL2561_Unified lightSensor = Adafruit_TSL2561_Unified(TSL2561_ADDR_FLO
 
 // Movement
 #define MOTION_PIN 7
-#define MOTION_COOLOFF 10 // Cool-off between motion alarms in seconds
+#define MOTION_COOLOFF 60 // Cool-off between motion alarms in seconds
 #define MOTION_CALIBRATION_TIME 10 //Calibration time in seconds
 #define MOVEMENT_DETECTED HIGH
 
@@ -72,16 +74,16 @@ Adafruit_TSL2561_Unified lightSensor = Adafruit_TSL2561_Unified(TSL2561_ADDR_FLO
 // Variables
 int airTemperature = 0;
 int deskTemperature = 0;
-int humidity = 0;
-int illuminance = 0;
-int	noiseLevel = 0;
+unsigned int humidity = 0;
+unsigned int illuminance = 0;
+unsigned int noiseLevel = 0;
 bool movementDetected = false;
 
 unsigned long timeOfLastMovement = 0;
 unsigned long timeOfLastNoise = 0;
 
 long timeOfSample;
-#define SAMPLE_PERIOD 6000	// Time between samples in ms
+#define SAMPLE_PERIOD 60000	// Time between samples in ms
 
 //////////////////////////////////////////////////////////////////////////
 // Main Functions
@@ -123,16 +125,16 @@ void printOpeningMessage(){
 }
 
 void printSensorData(){
-	JsonObject<7> entry;
+	JsonObject<8> entry;
 		
-	entry["id"] = "lurker2";
+	entry["id"] = unit_identifier.c_str();
 	entry["timestamp"] = timeOfSample;
 	entry["air_temp"] = float(airTemperature)/100;
 	entry["surface_temp"] = float(deskTemperature)/100;
 	entry["humidity"] = float(humidity)/100;
-	entry["illuminance"] = illuminance;
-	entry["noise_level"] = noiseLevel;
-
+	entry["illuminance"] = long(illuminance);
+	entry["noise_level"] = long(noiseLevel);
+	entry["motion"] = 0;
 
 	Serial.print(char(PACKET_START_CHARACTER));
 	Serial.print(entry);
@@ -141,7 +143,8 @@ void printSensorData(){
 
 void printMotionEvent(){
 	JsonObject<2> event;	
-	event["id"] = "lurker2";
+	
+	event["id"] = unit_identifier.c_str();
 	event["motion"] = 1;
 	
 	Serial.print(char(PACKET_START_CHARACTER));

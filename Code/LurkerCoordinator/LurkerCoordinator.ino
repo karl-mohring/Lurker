@@ -1,3 +1,5 @@
+#include <JsonParser.h>
+#include <JsonGenerator.h>
 #include <IRremote.h>
 #include <SPI.h>
 #include <Wire.h>
@@ -8,122 +10,57 @@
 #include <OneWire.h>
 #include <BH1750FVI.h>
 #include <DHT.h>
+#include <SimpleTimer.h>
 
-#define UNIT_ID 0
-
-//////////////////////////////////////////////////////////////////////////
-//Communication
-
-// RF24
-#define CE_PIN 9
-#define CSN_PIN 10
-#define LURKER_CHANNEL 90
-#define BROADCAST_PIPE 0x90909090FFLL
-#define BASE_PIPE 0x9090909000LL
-#define MAX_NETWORK_DEVICES 20
-#define PACKET_REQUEST_TIMEOUT 500
-
-RF24 radio(CE_PIN,CSN_PIN);
-const long unitPipe = BASE_PIPE + UNIT_ID;
-
-// Table for storing non-coordinator addresses
-char routingTable[MAX_NETWORK_DEVICES];
-byte routingTablePutter;
-#define ENTRY_NOT_FOUND -1
-
-
-/**
-* Communication Protocol
-* Uppercase letters signify messages from the coordinator to the nodes
-* Lowercase letters denote messages from nodes to the coordinator
-*/
-enum COMM_CODES{
-	NETWORK_ENUMERATION_NOTIFIER = 'X',
-	NETWORK_JOIN_NOTIFIER = 'x',
-	NETWORK_JOIN_CONFIRMATION = 'J',
-	
-	DATA_PACKET_REQUEST = 'D',
-	DATA_PACKET_RESPONSE = 'd',
-	
-	SOUND_NOTIFICATION = 's',
-	MOTION_NOTIFICATION = 'm',
-	TEMPERATURE_NOTIFICATION = 't',
-	HUMIDITY_NOTIFICATION = 'h',
-	LIGHT_NOTIFICATION = 'l',
-	
-	SERIAL_PACKET_START = '#',
-	SERIAL_DIVIDER = ','
-};
-
-
-// IR
-#define IR_TX_PIN 3
-#define IR_RX_PIN 2
-//IRsend irSend(IR_TX_PIN);
+using namespace ArduinoJson::Generator;
 
 
 //////////////////////////////////////////////////////////////////////////
-//Sensors
+// Unit-Specific Config
+const int UNIT_ID = 0;
+String unit_class = String("lurker");
+String unit_identifer = unit_class + UNIT_ID;
+
+
+//////////////////////////////////////////////////////////////////////////
+// Hardware Config
 
 // Temperature
-#define TEMP_PIN 4
-OneWire oneWire(TEMP_PIN);
+#define TEMPERATURE_PIN 7
+OneWire oneWire(TEMPERATURE_PIN);
 DallasTemperature tempSensor(&oneWire);
+float temperature;
 
 // Humidity
-#define HUMD_PIN 8
+#define HUMIDITY_PIN 8
 #define DHT_TYPE DHT11
-DHT humiditySensor(HUMD_PIN, DHT_TYPE);
+DHT humiditySensor(HUMIDITY_PIN, DHT_TYPE);
+float humidity;
 
 // Light
 BH1750FVI lightSensor;
+long illuminance;
 
 // Sound
-#define MIC_DIGITAL_PIN 6
 #define MIC_ANALOG_PIN A0
 #define SOUND_OVER_THRESHOLD LOW
 #define NOISE_COOLOFF 10	// Cool-off between noise alarms in seconds
+int noiseLevel;
 
 // Movement
-#define MOTION_PIN 7
+#define MOTION_PIN 2
 #define MOTION_COOLOFF 10 // Cool-off between motion alarms in seconds
-#define MOTION_CALIBRATION_TIME 10 //Calibration time in seconds
+#define MOTION_CALIBRATION_TIME 2 //Calibration time in seconds
 #define MOVEMENT_DETECTED HIGH
+bool motionDetected;
+
 
 //////////////////////////////////////////////////////////////////////////
-// Misc
+// Software Config
 
-#define BUZZER_PIN 5
+SimpleTimer timer;
+#define SAMPLE_PERIOD  20000	// Sample period in ms
 
-#define LED1_PIN A1
-#define LED2_PIN A2
-#define LED3_PIN A3
-
-#define BUTTON1_PIN A6
-#define BUTTON2_PIN A7
-
-#define SAMPLE_PERIOD 60000
-
-//////////////////////////////////////////////////////////////////////////
-// Variables
-int temperature;
-int humidity;
-int illuminance;
-int	noiseLevel;
-bool noiseTriggered;
-bool movementDetected;
-
-unsigned long timeOfLastMovement;
-unsigned long timeOfLastNoise;
-
-#define SEND_BUFFER_SIZE 32
-#define RECEIVE_BUFFER_SIZE 32
-char sendBuffer[SEND_BUFFER_SIZE];
-char receiveBuffer[RECEIVE_BUFFER_SIZE];
-byte sendBufferPutter;
-byte receiveBufferGetter;
-
-long timeOfSample;
 
 //////////////////////////////////////////////////////////////////////////
 // Main Functions
@@ -146,16 +83,13 @@ void setup(){
 /**
 * Main Loop
 */
-void loop()
-{
+void loop(){
 	checkSerial();
 	checkRadio();
 	checkSensors();
 }
 
-
 //////////////////////////////////////////////////////////////////////////
-
 //////////////////////////////////////////////////////////////////////////
 // Buffers & Misc
 
@@ -331,7 +265,7 @@ void transmitChar(char unitID, char message){
 void checkRadio(){
 	if (radio.available()){
 		Serial.print("Message received\n");
-		handleIncomingPacket();
+		//handleIncomingPacket();
 	}
 }
 
@@ -450,14 +384,13 @@ float decodeData(char dataCode){
 	
 }
 
+
 //////////////////////////////////////////////////////////////////////////
 // Communication - Serial
-
 
 void checkSerial(){
 	//TODO Check for serial inputs from the connected Pi/PC
 }
-
 
 void printOpeningMessage(){
 	Serial.println("==== Lurker Nano - Coordinator ====");
@@ -475,20 +408,19 @@ void printFinishedCalibration(){
 	Serial.println("done. Sensor calibrated.");
 }
 
-
 void printSensorData(){
-	Serial.print("\n===== Sensor Data =====");
-	Serial.print("\nTemperature:\t");
-	Serial.print(float(temperature)/100);
-	Serial.print(" C\nHumidity:\t");
-	Serial.print(float(humidity)/100);
-	Serial.print(" %\nLight:\t\t");
-	Serial.print(illuminance);
-	Serial.print(" lux\nSound Level:\t");
-	Serial.print(noiseLevel);
-	Serial.print(" count\n\n");
-}
+	JsonObject<5> entry;
 
+	entry["id"] = unit_identifer.c_str();
+	entry["temperature"] = float(temperature)/100;
+	entry["humidity"] = float(humidity)/100;
+	entry["illuminance"] = long(illuminance);
+	entry["noise"] = long(noiseLevel);
+
+	Serial.print(char(SERIAL_PACKET_START));
+	Serial.print(entry);
+	Serial.println(char(SERIAL_PACKET_END));
+}
 
 void printDataPacket(){
 	
@@ -541,10 +473,15 @@ void handleSoundNotification(int unitID){
 * Tell the base station that a motion warning has been detected
 */
 void handleMotionNotification(int unitID){
-	Serial.print(SERIAL_PACKET_START);
-	Serial.print(MOTION_NOTIFICATION);
-	Serial.print(SERIAL_DIVIDER);
-	Serial.println(unitID);
+	JsonObject<2> entry;
+	
+	entry["id"] = unit_identifer.c_str();
+	entry["motion"] = 1;
+	
+	
+	Serial.print(char(SERIAL_PACKET_START));
+	Serial.print(entry);
+	Serial.println(char(SERIAL_PACKET_END));
 }
 
 
@@ -556,7 +493,7 @@ void handleMotionNotification(int unitID){
 */
 void initialiseSensors(){
 	tempSensor.begin();
-	humiditySensor.begin();
+	//humiditySensor.begin();
 	initialiseLightSensor();
 	initialiseMotion();
 	initialiseSound();
@@ -608,7 +545,6 @@ void initialiseMotion()
 * Initialise the microphone for sound sensing
 */
 void initialiseSound(){
-	pinMode(MIC_DIGITAL_PIN, INPUT);
 	pinMode(MIC_ANALOG_PIN, INPUT);
 }
 
@@ -624,7 +560,7 @@ void checkSensors(){
 	// Periodically check climate sensors
 	if ((millis() - timeOfSample) > SAMPLE_PERIOD){
 		checkTemperature();
-		checkHumidity();
+		//checkHumidity();
 		checkLight();
 		noiseLevel = getSoundLevel(200);
 		
@@ -634,7 +570,6 @@ void checkSensors(){
 	}
 	
 	// Poll presence sensors
-	checkSound();
 	checkMovement();
 }
 
@@ -691,31 +626,6 @@ int getSoundLevel(int samplePeriod){
 	
 	int average = int(total/count);
 	return average;
-}
-
-
-/**
-* Check if the sound level threshold has been exceeded
-* A cool-off period starts each time the sound alarm is tripped.
-* The coordinator is notified of each alert.
-*/
-void checkSound(){
-	// Only check the noise alarm if the cool-off has been exceeded
-	if((millis() - timeOfLastNoise) > (NOISE_COOLOFF*1000)){
-		
-		// Check the noise level
-		if (digitalRead(MIC_DIGITAL_PIN) == SOUND_OVER_THRESHOLD){
-			
-			// Noise trigger exceeded, send a notification and start the cool-off
-			noiseTriggered = true;
-			timeOfLastNoise = millis();
-			sendSoundNotification();
-			
-			}else{
-			// No alarm; is fine
-			noiseTriggered = false;
-		}
-	}
 }
 
 

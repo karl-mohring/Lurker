@@ -1,656 +1,618 @@
-#include <IRremote.h>
-#include <SPI.h>
-#include <Wire.h>
-#include <DallasTemperature.h>
 #include <RF24_config.h>
 #include <RF24.h>
 #include <nRF24L01.h>
+#include <Logging.h>
+#include <SPI.h>
+#include <StraightBuffer.h>
+#include <SimpleTimer.h>
+#include <Wire.h>
 #include <OneWire.h>
+#include <DallasTemperature.h>
 #include <BH1750FVI.h>
+#include <JsonGenerator.h>
 #include <DHT.h>
 #include "avr/wdt.h"
+#include "settings.h"
 
-// Unit ID (1 - 20)
-#define UNIT_ID 1
+using namespace ArduinoJson::Generator;
 
 //////////////////////////////////////////////////////////////////////////
-//Communication
+// Lurker Nano
+//
+// The lurker is a small and inexpensive WSN node for home climate
+// monitoring.
+//
+// Sensors:
+//	- Temperature
+//	- Humidity
+//	- Illuminance
+//	- Motion
+//	- Sound Level
+//	- IR Receiver (not implemented)
+//
+// Actuators:
+//	- Buzzer (passive)
+//	- IR Blaster
+//	- 2 LEDs
+//
+//////////////////////////////////////////////////////////////////////////
+// Hardware Config
 
-// RF24
-#define CE_PIN 9
-#define CSN_PIN 10
-#define LURKER_CHANNEL 90
-#define BROADCAST_PIPE 0x90909090FFLL
-#define BASE_PIPE 0x9090909000LL
-#define NETWORK_COORDINATOR 0
-#define RF24_TIMEOUT 500
-#define JOIN_TIMEOUT 1000
-#define JOIN_REQUEST_COOLDOWN 10 // Minimum time between join requests in seconds
-#define NETWORK_TIMEOUT 600	// Network inactivity timeout in seconds
+// Temperature
+OneWire oneWire(TEMPERATURE_PIN);
+DallasTemperature tempSensor(&oneWire);
+float temperature;
 
-RF24 radio(CE_PIN,CSN_PIN);
-const long unitPipe = BASE_PIPE + UNIT_ID;
-bool isNetworked = false;
+// Humidity
+DHT humiditySensor(HUMIDITY_PIN, DHT_TYPE);
+float humidity;
 
-/**
-* Communication Protocol
-* Uppercase letters signify messages from the coordinator to the nodes
-* Lowercase letters denote messages from nodes to the coordinator
-*/
-enum COMM_CODES{
-	NETWORK_ENUMERATION_NOTIFIER = 'X',
-	NETWORK_JOIN_NOTIFIER = 'x',
-	NETWORK_JOIN_CONFIRMATION = 'J',
+// Illuminance
+BH1750FVI lightSensor;
+long illuminance;
+
+// Motion
+bool motionDetected;
+long timeOfLastMotion;
+
+// Sound Level
+int soundLevel;
+
+// Buzzer
+RF24 radio(CE_PIN, CSN_PIN);
+
+
+//////////////////////////////////////////////////////////////////////////
+// Soft Config
+
+// Sample Timer
+SimpleTimer timer;
+const long SAMPLE_INTERVAL = 20000;	// Sample interval in ms
+int joinTimerID;
+int networkTimeoutTimerID;
+int printDataTimerID;
+
+// Communication
+enum COMM_TAGS{
+	PACKET_START = '#',
+	PACKET_END = '$',
+	DIVIDER = ',',
 	
+	NETWORK_JOIN_REQUEST = 'j',
+	NETWORK_JOIN_CONFIRM = 'J',
+	NETWORK_CONNECTION_RESET = 'R',
 	DATA_PACKET_REQUEST = 'D',
 	DATA_PACKET_RESPONSE = 'd',
 	
-	SOUND_NOTIFICATION = 's',
-	MOTION_NOTIFICATION = 'm',
-	TEMPERATURE_NOTIFICATION = 't',
-	HUMIDITY_NOTIFICATION = 'h',
-	LIGHT_NOTIFICATION = 'l',
+	UNIT_ID_CODE = 'Z',
+	TEMPERATURE_CODE = 'T',
+	HUMIDITY_CODE = 'H',
+	ILLUMINANCE_CODE = 'I',
+	MOTION_CODE = 'M',
+	SOUND_CODE = 'S',
 	
-	SERIAL_PACKET_START = '#',
-	SERIAL_DIVIDER = ','
+	BUZZER_ON_CODE = 'B',
+	BUZZER_OFF_CODE = 'b',
+	
+	LIGHT_ON_CODE = 'L',
+	LIGHT_OFF_CODE = 'l'
 };
+bool connectedToNetwork = false;
+
+String received = "";
+bool recording = false;
+
+// Radio Buffer
+StraightBuffer readBuffer(BUFFER_LENGTH);
+StraightBuffer writeBuffer(BUFFER_LENGTH);
+
+// Coordinator - Routing table
+int routingTable[MAX_NETWORK_SIZE];
 
 
-// IR
-//TODO Implement the IR blaster and receiver
-#define IR_TX_PIN 3
-#define IR_RX_PIN 2
-//IRsend irSend(IR_TX_PIN);
-
-
-//////////////////////////////////////////////////////////////////////////
-//Sensors
-
-// Temperature
-#define TEMP_PIN 4
-OneWire oneWire(TEMP_PIN);
-DallasTemperature tempSensor(&oneWire);
-
-// Humidity
-#define HUMD_PIN 8
-#define DHT_TYPE DHT11
-DHT humiditySensor(HUMD_PIN, DHT_TYPE);
-
-// Light
-BH1750FVI lightSensor;
-
-// Sound
-#define MIC_DIGITAL_PIN 6
-#define MIC_ANALOG_PIN A0
-#define SOUND_OVER_THRESHOLD LOW
-#define NOISE_COOLOFF 10	// Cool-off between noise alarms in seconds
-
-// Movement
-#define MOTION_PIN 7
-#define MOTION_COOLOFF 10 // Cool-off between motion alarms in seconds
-#define MOTION_CALIBRATION_TIME 10 //Calibration time in seconds
-#define MOVEMENT_DETECTED HIGH
-
-//////////////////////////////////////////////////////////////////////////
-// Misc
-
-#define BUZZER_PIN 5
-
-#define LED1_PIN A1
-#define LED2_PIN A2
-#define LED3_PIN A3
-
-#define BUTTON1_PIN A6
-#define BUTTON2_PIN A7
-
-//////////////////////////////////////////////////////////////////////////
-// Variables
-int temperature;
-int humidity;
-int illuminance;
-int	noiseLevel;
-bool noiseTriggered;
-bool movementDetected;
-
-unsigned long timeOfLastMovement = 0;
-unsigned long timeOfLastNoise = 0;
-
-unsigned long timeOfLastPacket = 0;
-unsigned long timeOfLastJoinRequest = 0;
-
-#define SEND_BUFFER_SIZE 32
-#define RECEIVE_BUFFER_SIZE 32
-char sendBuffer[SEND_BUFFER_SIZE];
-char receiveBuffer[RECEIVE_BUFFER_SIZE];
-byte sendBufferPutter;
-byte receiveBufferGetter;
-
-long timeOfSample;
-#define SAMPLE_PERIOD 6000
 
 //////////////////////////////////////////////////////////////////////////
 // Main Functions
 //////////////////////////////////////////////////////////////////////////
 
+
 /**
-* Initialization
+* Initial script - Run once
 */
-void setup(){
-	Serial.begin(57600);
-	printOpeningMessage();
+void setup()
+{
+	Log.Init(LOGGER_LEVEL, SERIAL_BAUD);
+	Log.Info("Lurker starting - %s\n", unitID.c_str());
 	
-	initialiseRadio();
 	initialiseSensors();
+	initialiseBuzzer();
+	initialiseRadio();
+	initialiseLights();
 }
 
 
 /**
 * Main Loop
 */
-void loop()
-{
-	enableWatchdog();
-	
-	checkNetwork();
-	wdt_reset();
-	
+void loop(){
+	timer.run();
+
+	checkSerial();
 	checkRadio();
-	checkSensors();
-	wdt_reset();
-	
-	delay(500);
-	disableWatchdog();
-}
-
-//////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////
-// Buffer & Misc
-
-/**
-* Insert a character into the send buffer
-*/
-void toSendBuffer(char c){
-	// Only insert character if there is room left in the buffer
-	if (sendBufferPutter < SEND_BUFFER_SIZE){
-		sendBuffer[sendBufferPutter] = c;
-		sendBufferPutter++;
-	}
-}
-
-
-/**
-* Insert an integer (2 bytes) into the send buffer
-*/
-void toSendBuffer(int i){
-	toSendBuffer(char(highByte(i)));
-	toSendBuffer(char(lowByte(i)));
-}
-
-
-/**
-* Initialise the send buffer
-*/
-void resetSendBuffer(){
-	sendBufferPutter = 0;
-}
-
-
-/**
-* Get the next character from the receive buffer
-* Will return the last character of the buffer if the end has already been reached
-*/
-char fromReceiveBuffer(){
-	char c = receiveBuffer[receiveBufferGetter];
-	
-	if (receiveBufferGetter < RECEIVE_BUFFER_SIZE){
-		receiveBufferGetter++;
-	}
-	
-	return c;
-}
-
-
-/**
-* Initialize the receive buffer by resetting the getter position
-*/
-void resetReceiveBuffer(){
-	receiveBufferGetter = 0;
-}
-
-
-/**
-* Convert a floating point decimal number into an int
-* The decimal is shifted prior to conversion to preserve precision, but reduce range.
-* e.g. floatToInt(12.34, 2) = 1234
-*
-* @return decimal-shifted integer
-* @param num Float number to convert
-* @param decimalShift Number of decimal shifts (1-4)
-*/
-int floatToInt(float num, int decimalShift){
-	long decimalMultiplier = 1;
-	
-	if(decimalShift > 0 && decimalShift < 5){
-		decimalMultiplier = pow(10, decimalShift);
-	}
-	
-	return (int)(num*decimalMultiplier);
 }
 
 
 //////////////////////////////////////////////////////////////////////////
-// Communication - RF24 Radio
+// Communication - Wired
+
+
+// Periodic function - Transmit sensor data over serial
+/**
+* Send sensor data to the connected device
+* Sensor data is structured in JSON format
+*/
+void printSensorData(){
+	readSensors();
+	
+	JsonObject<6> data;
+	data["id"] = unitID.c_str();
+	data["temperature"] = temperature;
+	data["humidity"] = humidity;
+	data["illuminance"] = illuminance;
+	data["motion"] = motionDetected;
+	data["sound"] = soundLevel;
+	
+	Serial.print(char(PACKET_START));
+	Serial.print(data);
+	Serial.println(char(PACKET_END));
+}
+
 
 /**
-* Start the RF24 radio.
-* Initialise listening pipes and allow incoming messages
+* Check serial for incoming packets
+*/
+void checkSerial(){
+	// Grab in bytes, one at a time
+	if (Serial.available()){
+		char c = Serial.read();
+		
+		// Packet start char received; start recording
+		if (c == char(PACKET_START) && !recording){
+			recording = true;
+			received = "#";
+			Log.Debug("Serial packet started...");
+		}
+		
+		// Packet end char received; stop recording and process the packet
+		else if (c == PACKET_END && recording){
+			recording = false;
+			received += "$";
+			
+			Log.Info("Serial packet received. [Length: %d]\n", received.length());
+			Log.Debug("Received: %s\n", received.c_str());
+			
+			// Transfer string to the read buffer and do the thing
+			readBuffer.reset();
+			
+			for (int i = 0; i < received.length(); i++){
+				readBuffer.write(byte(received[i]));
+			}
+			
+			handlePacket();
+		}
+		
+		
+		//
+		else{
+			if (recording && received.length() < (BUFFER_LENGTH - 1)){
+				received += char(c);
+				Log.Debug("Packet length: %d\n", received.length());
+			}
+		}
+	}
+}
+
+
+//////////////////////////////////////////////////////////////////////////
+// Communication - Wireless
+
+
+/**
+* Initialise the RF24 radio
 */
 void initialiseRadio(){
+	// Set up the options for the transceiver
 	radio.begin();
-	
-	radio.setChannel(LURKER_CHANNEL);
+	radio.setDataRate(RF24_1MBPS);
 	radio.setPALevel(RF24_PA_MAX);
-	radio.setDataRate(RF24_2MBPS);
-	radio.setRetries(2, 15);
+	radio.setRetries(15, 15);
+	connectedToNetwork = false;
 	
-	// Open writing channel to coordinator
+	// Open communication channels
 	radio.openWritingPipe(BASE_PIPE);
-	
-	// Start listening on unit-specific pipe
-	radio.openReadingPipe(1, unitPipe);
+	radio.openReadingPipe(1, UNIT_PIPE);
 	radio.openReadingPipe(2, BROADCAST_PIPE);
 	
+	// Set up network joining
+	if (UNIT_NUMBER != COORDINATOR){
+		timer.setInterval(NETWORK_JOIN_INTERVAL, joinNetwork);
+	}
+	
+	Log.Debug("Radio started...\n");
+}
+
+
+// Periodic function - Join RF24 network
+/**
+* Join the RF24 network if not already connected.
+* The network coordinator holds the networking table and does not need to join.
+*/
+void joinNetwork(){
+	if (!connectedToNetwork && UNIT_NUMBER != COORDINATOR){
+		transmitJoinRequest();
+	}
+}
+
+
+// Periodic function - Reset RF24 network membership
+void resetNetworkConnection(){
+	connectedToNetwork = false;
+}
+
+
+/**
+* Send a network request to the network coordinator
+*/
+void transmitJoinRequest(){
+	writeBuffer.reset();
+	writeBuffer.write(PACKET_START);
+	writeBuffer.write(NETWORK_JOIN_REQUEST);
+	writeBuffer.write(UNIT_NUMBER);
+	writeBuffer.write(PACKET_END);
+	
+	transmitWriteBuffer();
+	Log.Debug("Attempting network join\n");
+}
+
+
+/**
+* Transmit the collected sensor data to the network coordinator
+*/
+void transmitDataPacket(){
+	prepareDataPacket();
+	transmitWriteBuffer();
+}
+
+
+/**
+* Transmit the contents of the write buffer using the RF24 network
+*/
+void transmitWriteBuffer(){
+	radio.stopListening();
+	radio.write(writeBuffer.getBufferAddress(), writeBuffer.getWritePosition());
 	radio.startListening();
 }
 
 
 /**
-* Check for incoming packets and act accordingly
+* Load the sensor data to the write buffer
+*/
+void prepareDataPacket(){
+	writeBuffer.reset();
+	writeBuffer.write(PACKET_START);
+	writeBuffer.write(DATA_PACKET_RESPONSE);
+	
+	writeBuffer.write(UNIT_ID_CODE);
+	writeBuffer.write(UNIT_NUMBER);
+	writeBuffer.write(DIVIDER);
+	
+	writeBuffer.write(TEMPERATURE_CODE);
+	writeBuffer.writeInt(int(temperature*100));
+	writeBuffer.write(DIVIDER);
+	
+	writeBuffer.write(HUMIDITY_CODE);
+	writeBuffer.writeInt(int(humidity*100));
+	writeBuffer.write(DIVIDER);
+	
+	writeBuffer.write(ILLUMINANCE_CODE);
+	writeBuffer.writeInt(illuminance);
+	writeBuffer.write(DIVIDER);
+	
+	writeBuffer.write(MOTION_CODE);
+	writeBuffer.write(motionDetected);
+	writeBuffer.write(DIVIDER);
+	
+	writeBuffer.write(SOUND_CODE);
+	writeBuffer.writeInt(soundLevel);
+	writeBuffer.write(DIVIDER);
+	
+	writeBuffer.write(PACKET_END);
+}
+
+
+/**
+* Check the radio for any incoming packets.
 */
 void checkRadio(){
 	if (radio.available()){
-		timeOfLastPacket = millis();
-		handleIncomingPacket();
+		Log.Info("Packet received\n");
+		readRadioPacket();
 	}
 }
 
 
 /**
-* Read and process incoming packets from the RF24 radio
+*
 */
-void handleIncomingPacket(){
-	resetReceiveBuffer();
-	resetSendBuffer();
-	radio.read(receiveBuffer, RECEIVE_BUFFER_SIZE);
-	processReceivedPacket();
+void readRadioPacket(){
+	radio.read(readBuffer.getBufferAddress(), BUFFER_LENGTH);
+	handlePacket();
 }
 
 
 /**
-* Respond to the latest incoming packet
-* The packet must already be read into the received buffer
+*
 */
-void processReceivedPacket(){
-	char unitID = fromReceiveBuffer();
+void handlePacket(){
 	
-	// Only accept commands from the coordinator (UNIT 0)
-	if(unitID == NETWORK_COORDINATOR){
-		char packetID = fromReceiveBuffer();
+	// First char needs to be a start byte
+	byte b = readBuffer.read();
+	Log.Debug("Command: %c\n", char(b));
+	
+	// Do the rest of the things
+	if (b == PACKET_START){
+		b = readBuffer.read();
 		
-		switch(packetID){
-			case DATA_PACKET_REQUEST:
-			transmitDataPacket();
-			printSentPacket();
-			break;
+		while (b != PACKET_END && readBuffer.getNumRemaining() > 0){
+			Log.Debug("Command: %c\n", char(b));
 			
-			case NETWORK_ENUMERATION_NOTIFIER:
-			checkNetwork();
-			break;
+			switch (b){
+				
+				case BUZZER_ON_CODE:{
+					buzzerOn();
+					break;
+				}
+				
+				case BUZZER_OFF_CODE:{
+					buzzerOff();
+					break;
+				}
+				
+				case DATA_PACKET_REQUEST:{
+					transmitDataPacket();
+					break;
+				}
+				
+				case DATA_PACKET_RESPONSE:{
+					processDataPacket();
+					break;
+				}
+				
+				case LIGHT_ON_CODE:{
+					char lightID = readBuffer.read();
+					switchLight(int(lightID), ON);
+					break;
+				}
+				
+				case LIGHT_OFF_CODE:{
+					char lightID = readBuffer.read();
+					switchLight(int(lightID), OFF);
+					break;
+				}
+
+				case NETWORK_JOIN_REQUEST:{
+					int unitNumber = readBuffer.read();
+					addUnitToNetwork(unitNumber);
+					break;
+				}
+				
+				case NETWORK_JOIN_CONFIRM:{
+					processNetworkJoin();
+					break;
+				}
+
+				case NETWORK_CONNECTION_RESET:{
+					resetNetworkConnection();
+					break;
+				}
+
+				case DIVIDER:{
+					break;
+					
+				}
+
+				default:{
+					Log.Error("Warning: unknown comm tag [%c]\n", char(b));
+					break;
+				}
+			}
 			
-			case NETWORK_JOIN_CONFIRMATION:
-			isNetworked = true;
-			printJoinNotification();
-			break;
+			b = readBuffer.read();	
+		}	
+	}
+}
+
+
+/**
+* Confirm the RF24 network has been joined so we can stop spamming the coordinator
+*/
+void processNetworkJoin(){
+	connectedToNetwork = true;
+	Log.Info("Joined network\n");
+}
+
+void addUnitToNetwork(int unitNum){
+	if (unitNum <= MAX_NETWORK_SIZE){
+		routingTable[unitNum] = timer.setTimeout(NETWORK_RESET_INTERVAL, cleanRoutingTable);
+	}
+}
+
+void processDataPacket(){
+	//TODO: Process incoming data packets over RF24
+}
+
+void sendACK(){
+	//TODO send an ack packet after receiving a data packet from a node
+}
+
+void processACK(){
+	//TODO reset the network timeout of the node after receiving an ACK from the coordinator
+}
+void cleanRoutingTable(){
+	for (int i = 0; i < MAX_NETWORK_SIZE; i++){
+		
+		// Active units have a timer ID higher than -1.
+		if (routingTable[i] >= 0){
+			
+			// Clear any units from the routing table that are non-responsive
+			if(!timer.isEnabled(routingTable[i])){
+				routingTable[i] = -1;
+			}
 		}
 	}
 }
-
-
-/**
-* Join the local lurker network - Blocking
-* The unit will periodically send join requests until the network has been joined
-* Coordinator (UNIT 0) must be running to handle join requests
-*/
-void checkNetwork(){
-	
-	// Remove network status if a packet hasn't been received in a while
-	if(isNetworked && (millis() - timeOfLastPacket) > (NETWORK_TIMEOUT*1000)){
-		printNetworkTimeout();
-		isNetworked = false;
-	}
-	
-	// Check if the network has been joined
-	if(!isNetworked && (millis() - timeOfLastJoinRequest) > (JOIN_REQUEST_COOLDOWN*1000)){
-		attemptNetworkJoin();
-	}
-}
-
-
-/**
-* Request to join the network and wait for the response
-* Timeout is 500ms
-*/
-void attemptNetworkJoin(){
-	// Attempt to join the network
-	transmitJoinRequest();
-	timeOfLastJoinRequest = millis();
-	printJoinRequest();
-	
-	// Check for response
-	while(!isNetworked && (millis() - timeOfLastJoinRequest) < JOIN_TIMEOUT){
-		if(radio.available()){
-			radio.read(receiveBuffer, RECEIVE_BUFFER_SIZE);
-			processReceivedPacket();
-		}
-	}
-}
-
-
-/**
-* Transmit a join request to the lurker coordinator
-*/
-void transmitJoinRequest(){
-	transmitChar(NETWORK_JOIN_NOTIFIER);
-}
-
-
-/**
-* Transmit the latest sensor data to the coordinator
-* Data packet structure - [Unit ID] [Packet ID] [Temp][] [Humidity][] [Light][] [Sound][Movement]
-*/
-void transmitDataPacket(){
-	if (isNetworked){
-		resetSendBuffer();
-		
-		toSendBuffer(char(UNIT_ID));
-		toSendBuffer(char(DATA_PACKET_RESPONSE));
-		toSendBuffer(SERIAL_DIVIDER);
-		
-		toSendBuffer(TEMPERATURE_NOTIFICATION);
-		toSendBuffer(temperature);
-		toSendBuffer(SERIAL_DIVIDER);
-		
-		toSendBuffer(HUMIDITY_NOTIFICATION);
-		toSendBuffer(humidity);
-		toSendBuffer(SERIAL_DIVIDER);
-		
-		toSendBuffer(LIGHT_NOTIFICATION);
-		toSendBuffer(illuminance);
-		
-		toSendBuffer('\n');
-		
-		radio.stopListening();
-		radio.write(sendBuffer, sendBufferPutter);
-		radio.stopListening();
-	}
-}
-
 
 /**
 * Transmit a character to the specified node
 */
 void transmitChar(char message){
 	radio.stopListening();
-	resetSendBuffer();
-	toSendBuffer(message);
-	radio.write(sendBuffer, sendBufferPutter);
+	radio.write(&message, 1);
 	radio.startListening();
+	Log.Verbose("Sending: %c\n", message);
 }
 
-
-/**
-* Notify the coordinator that the sound alarm has been tripped
-*/
-void sendSoundNotification(){
-	printSoundEvent();
-	transmitChar(SOUND_NOTIFICATION);
-}
-
-
-/**
-* Alert the coordinator that motion has been detected
-*/
-void sendMotionNotification(){
-	printMotionEvent();
-	transmitChar(MOTION_NOTIFICATION);
-}
-
-
-//////////////////////////////////////////////////////////////////////////
-// Communication - Serial
-
-void printOpeningMessage(){
-	Serial.print("==== Lurker Nano - Node #");
-	Serial.print(UNIT_ID);
-	Serial.print(" ====\n");
-}
-
-void printSensorData(){
-	Serial.print("\n===== Sensor Data =====");
-	Serial.print("\nTemperature:\t");
-	Serial.print(float(temperature)/100);
-	Serial.print(" C\nHumidity:\t");
-	Serial.print(float(humidity)/100);
-	Serial.print(" %\nLight:\t\t");
-	Serial.print(illuminance);
-	Serial.print(" lux\nSound Level:\t");
-	Serial.print(noiseLevel);
-	Serial.print(" count\n\n");
-}
-
-void printMotionEvent(){
-	Serial.println("Motion detected");
-}
-
-void printSoundEvent(){
-	Serial.println("Sound detected");
-}
-
-void printNetworkTimeout(){
-	Serial.println("Network timeout");
-}
-
-void printJoinRequest(){
-	Serial.println("Network join request sent...");
-}
-
-void printJoinNotification(){
-	Serial.println("Joined network");
-}
-
-void printSentPacket(){
-	Serial.println("Send data packet to coordinator");
-}
-
-void printCalibrationMessage(){
-	Serial.println("Calibrating motion sensor. Please wait");
-}
-
-void printWaitingMessage(){
-	Serial.print("...");
-}
-
-void printFinishedCalibration(){
-	Serial.println("done. Sensor calibrated.");
-}
 
 //////////////////////////////////////////////////////////////////////////
 // Sensors
 
+// Init
+
+
 /**
-* Start up the Lurker's sensors
+* Initialise all attached sensors
 */
 void initialiseSensors(){
-	tempSensor.begin();
-	humiditySensor.begin();
-	initialiseLightSensor();
+	Log.Debug("Initialising sensors...\n");
+	
+	initialiseTemperature();
+	initialiseHumidity();
+	initialiseIlluminaince();
 	initialiseMotion();
-	initialiseSound();
 	
-	
-	// Initialise variables
-	temperature = 0;
-	humidity = 0;
-	illuminance = 0;
-	noiseLevel = 0;
-	noiseTriggered = false;
-	movementDetected = false;
+	// Set up periodic sensor reads
+	printDataTimerID = timer.setInterval(SAMPLE_INTERVAL, printSensorData);
 }
 
 
 /**
-* Initialise the BH1750FVI sensor
+* Initialise the temperature sensor
 */
-void initialiseLightSensor(){
+void initialiseTemperature(){
+	tempSensor.begin();
+	temperature = 0;
+	Log.Debug("Temperature started...\n");
+}
+
+
+/**
+* Initialise the humidity sensor
+*/
+void initialiseHumidity(){
+	humiditySensor.begin();
+	humidity = 0;
+	Log.Debug("Humidity started...\n");
+}
+
+
+/**
+* Initialise the light sensor
+*/
+void initialiseIlluminaince(){
 	lightSensor.begin();
 	lightSensor.SetAddress(Device_Address_L);
 	lightSensor.SetMode(Continuous_H_resolution_Mode);
 	
+	Log.Debug("Illuminance started...\n");
 }
 
 
 /**
-* Calibrate and initialize the PIR motion detector.
+* Initialise the PIR motion sensor
 */
-void initialiseMotion()
-{
+void initialiseMotion(){
 	pinMode(MOTION_PIN, INPUT);
-	printCalibrationMessage();
+	delay(MOTION_INITIALISATION_TIME);
+	motionDetected = false;
 	
-	for(int i = 0; i < MOTION_CALIBRATION_TIME; i++){
-		printWaitingMessage();
-		delay(1000);
-	}
-	
-	printFinishedCalibration();
-	
-	delay(50);
-
+	timer.setInterval(MOTION_CHECK_INTERVAL, readMotion);
+	Log.Debug("Motion started...\n");
 }
 
 
 /**
-* Initialise the microphone for sound sensing
+* Initialise the sound level sensor
 */
 void initialiseSound(){
-	pinMode(MIC_DIGITAL_PIN, INPUT);
-	pinMode(MIC_ANALOG_PIN, INPUT);
+	pinMode(MIC_PIN, INPUT);
+	soundLevel = 0;
+	
+	Log.Debug("Sound level started...\n");
 }
 
 
+// Read
+
+
 /**
-* Obtain readings from all of the Lurker's sensors
-* Temperature, humidity, and light are sampled periodically
-* Sound and motion are polled for presence detection
-*
-* Results are saved as global variables
+* Read all sensor data into global variables
 */
-void checkSensors(){
-	// Periodically check climate sensors
-	if ((millis() - timeOfSample) > SAMPLE_PERIOD){
-		checkTemperature();
-		checkHumidity();
-		checkLight();
-		noiseLevel = getSoundLevel(200);
-		
-		timeOfSample = millis();
-		
-		printSensorData();
-	}
+void readSensors(){
+	temperature = readTemperature();
+	humidity = readHumidity();
+	illuminance = readIlluminance();
+	soundLevel = readSoundLevel();
 	
-	// Poll presence sensors
-	checkSound();
-	checkMovement();
+	Log.Debug("Temperature: %d\n", int((temperature)*100));
+	Log.Debug("Humidity: %d\n", int((humidity*100)));
+	Log.Debug("Illuminance: %d\n", illuminance);
+	Log.Debug("Motion: %T\n", motionDetected);
+	Log.Debug("Sound Level: %d\n", soundLevel);
 }
 
 
 /**
 * Take a temperature reading
-* Reading is saved as a shifted decimal integer (12.34 => 1234)
-*/
-void checkTemperature(){
-	float temp;
-	tempSensor.requestTemperatures();
-	temp = tempSensor.getTempCByIndex(0);
-	temperature = floatToInt(temp, 2);
-}
-
-
-/**
-* Check the relative humidity sensor.
-* Output given as a shifted decimal integer (12.34 => 1234)
-* The DHT11 takes up to 2 seconds to deliver a response.
-*/
-void checkHumidity(){
-	float hum;
-	hum = humiditySensor.readHumidity();
-	humidity = floatToInt(hum, 2);
-}
-
-
-/**
-* Check the light level hitting the sensor.
-* Illuminance saved in lux as an integer
-*/
-void checkLight(){
-	illuminance = lightSensor.GetLightIntensity();
-}
-
-
-/**
-* Get the average sound level over the specified sampling period
 *
-* @param samplePeriod Listening period for the sampling in ms.
-* @return Average sound level in 10-bit counts
+* Returns:
+*	Temperature reading in degrees Celsius
 */
-int getSoundLevel(int samplePeriod){
-	unsigned long startTime = millis();
-	long total = 0;
-	long count = 0;
-	
-	while (millis() < (startTime + samplePeriod) && samplePeriod > 0){
-		int soundLevel = analogRead(MIC_ANALOG_PIN);
-		total += soundLevel;
-		count += 1;
-	}
-	
-	int average = int(total/count);
-	return average;
+float readTemperature(){
+	tempSensor.requestTemperatures();
+	return tempSensor.getTempCByIndex(0);;
 }
 
 
 /**
-* Check if the sound level threshold has been exceeded
-* A cool-off period starts each time the sound alarm is tripped.
-* The coordinator is notified of each alert.
+* Take a humidity reading.
+* May take up to 2 seconds with the DHT11 sensor
+*
+* Returns:
+*	Relative humidity as a floating percentage
 */
-void checkSound(){
-	// Only check the noise alarm if the cool-off has been exceeded
-	if((millis() - timeOfLastNoise) > (NOISE_COOLOFF*1000)){
-		
-		// Check the noise level
-		if (digitalRead(MIC_DIGITAL_PIN) == SOUND_OVER_THRESHOLD){
-			
-			// Noise trigger exceeded, send a notification and start the cool-off
-			noiseTriggered = true;
-			timeOfLastNoise = millis();
-			sendSoundNotification();
-			
-			}else{
-			// No alarm; is fine
-			noiseTriggered = false;
-		}
-	}
+float readHumidity(){
+	return humiditySensor.readHumidity();
+}
+
+
+/**
+* Take an illuminance reading
+*
+* Returns:
+*	Illuminance in lux
+*/
+long readIlluminance(){
+	return lightSensor.GetLightIntensity();
 }
 
 
@@ -658,23 +620,98 @@ void checkSound(){
 * Check the PIR sensor for detected movement
 * The sensor will output HIGH when motion is detected.
 * Detections will hold the detection status HIGH until the cool-down has lapsed (default: 60s)
+*
+* Returns:
+*	True if motion has been detected recently
 */
-void checkMovement(){
-	// Only check the noise alarm if the cool-off has been exceeded
-	if((millis() - timeOfLastMovement) > (MOTION_COOLOFF*1000)){
+void readMotion(){
+	// Only check the motion alarm if the cool-off has been exceeded
+	if((millis() - timeOfLastMotion) > (MOTION_COOLOFF)){
 		
-		// Check the noise level
-		if (digitalRead(MOTION_PIN) == MOVEMENT_DETECTED){
-			
-			// Noise trigger exceeded, send a notification and start the cool-off
-			movementDetected = true;
-			timeOfLastMovement = millis();
-			sendMotionNotification();
+		// Check the sensor
+		if (digitalRead(MOTION_PIN) == MOTION_DETECTED){
+			motionDetected = true;
+			timeOfLastMotion = millis();
 			
 			}else{
 			// No alarm; is fine
-			movementDetected = false;
+			motionDetected = false;
 		}
+	}
+}
+
+
+/**
+* Take a sound level reading.
+*
+* Returns:
+*	Sound level as a 10-bit count
+*/
+int readSoundLevel(){
+	return analogRead(MIC_PIN);
+}
+
+//////////////////////////////////////////////////////////////////////////
+// Buzzer
+
+
+/**
+* Initialise the passive buzzer
+*/
+void initialiseBuzzer(){
+	pinMode(BUZZER_PIN, OUTPUT);
+	buzzerOff();
+	Log.Debug("Buzzer started...\n");
+}
+
+
+/**
+* Turn on the buzzer
+*/
+void buzzerOn(){
+	digitalWrite(BUZZER_PIN, HIGH);
+	Log.Debug("Buzzer on\n");
+}
+
+
+/**
+* Turn the buzzer off
+*/
+void buzzerOff(){
+	digitalWrite(BUZZER_PIN, LOW);
+	Log.Debug("Buzzer off\n");
+}
+
+
+//////////////////////////////////////////////////////////////////////////
+// LEDs
+
+
+/**
+* Initialise the LED indicator lights
+* Their default state is OFF
+*/
+void initialiseLights(){
+	pinMode(LED1, OUTPUT);
+	switchLight(LED1, OFF);
+	
+	pinMode(LED2, OUTPUT);
+	switchLight(LED2, OFF);
+}
+
+
+/**
+* Switch the LED indicator light on or off.
+* LEDs are directly supplied by the MCU pins
+*
+* Arguments:
+*	lightPin - Pin location of the LED to be switched
+*	state - boolean state of the LED, high for ON.
+*/
+void switchLight(int lightPin, bool state){
+	if (lightPin == LED1 || lightPin == LED2){
+		digitalWrite(lightPin, state);
+		Log.Debug("LED on pin %d - %T\n", lightPin, state);
 	}
 }
 
@@ -682,12 +719,13 @@ void checkMovement(){
 //////////////////////////////////////////////////////////////////////////
 // Watchdog
 
+
 /**
 * Enable the watchdog timer
 * The program will restart if it hangs for more than 8 seconds
 */
 void enableWatchdog(){
-	// Disable interrupts while setting up the watchdtog
+	// Disable interrupts while setting up the watchdog
 	cli();
 	
 	// Feed the dog to stop any premature restarts
@@ -713,5 +751,3 @@ void disableWatchdog(){
 	
 	sei();
 }
-
-
