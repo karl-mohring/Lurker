@@ -10,7 +10,7 @@
 
 #define __AVR_ATmega328p__
 #define __AVR_ATmega328P__
-#define ARDUINO 158
+#define ARDUINO 156
 #define ARDUINO_MAIN
 #define F_CPU 16000000L
 #define __AVR__
@@ -37,21 +37,25 @@ void sendACK();
 void processACK();
 void cleanRoutingTable();
 void transmitChar(char message);
-void initialiseSensors();
-void initialiseTemperature();
-void initialiseHumidity();
-void initialiseIlluminaince();
-void initialiseMotion();
+void startSensors();
 void readSensors();
+void startTemperature();
 float readTemperature();
+void startHumidity();
 float readHumidity();
+void startIlluminance();
 long readIlluminance();
+void startMotion();
 void readMotion();
 void initialiseBuzzer();
 void buzzerOn();
 void buzzerOff();
 void initialiseLights();
 void switchLight(int ledNum, bool state);
+void flashMotionLight();
+void endMotionLightFlash();
+void flashSensorReadLight();
+void endSensorReadFlash();
 void enableWatchdog();
 void disableWatchdog();
 

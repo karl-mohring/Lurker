@@ -11,12 +11,12 @@
 #include <BH1750FVI.h>
 #include <JsonGenerator.h>
 #include <DHT.h>
-#include "avr/wdt.h"
+#include "avr/wdt.h" 
 #include "settings.h"
 
 using namespace ArduinoJson::Generator;
 
-#define LURKER_VERSION 0.9
+const float LURKER_VERSION = 0.9;
 
 //////////////////////////////////////////////////////////////////////////
 // Lurker Nano
@@ -61,7 +61,9 @@ long timeOfLastMotion;
 RF24 radio(CE_PIN, CSN_PIN);
 
 // Lights
-int leds[] = {LED0, LED1};
+int leds[3] = {LED0, LED1, LED_BUILTIN};
+	
+JsonObject<8> sensorData;
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -75,27 +77,7 @@ int printDataTimerID;
 
 // Communication
 enum COMM_TAGS{
-	PACKET_START = '#',
-	PACKET_END = '$',
-	DIVIDER = ',',
 	
-	NETWORK_JOIN_REQUEST = 'j',
-	NETWORK_JOIN_CONFIRM = 'J',
-	NETWORK_CONNECTION_RESET = 'R',
-	DATA_PACKET_REQUEST = 'D',
-	DATA_PACKET_RESPONSE = 'd',
-	
-	UNIT_ID_CODE = 'Z',
-	TEMPERATURE_CODE = 'T',
-	HUMIDITY_CODE = 'H',
-	ILLUMINANCE_CODE = 'I',
-	MOTION_CODE = 'M',
-		
-	BUZZER_ON_CODE = 'B',
-	BUZZER_OFF_CODE = 'b',
-	
-	LIGHT_ON_CODE = 'L',
-	LIGHT_OFF_CODE = 'l'
 };
 bool connectedToNetwork = false;
 
@@ -124,7 +106,7 @@ void setup()
 	Log.Init(LOGGER_LEVEL, SERIAL_BAUD);
 	Log.Info("Lurker starting - %s\n", unitID.c_str());
 	
-	initialiseSensors();
+	startSensors();
 	initialiseBuzzer();
 	initialiseRadio();
 	initialiseLights();
@@ -154,15 +136,8 @@ void loop(){
 void printSensorData(){
 	readSensors();
 	
-	JsonObject<6> data;
-	data["id"] = unitID.c_str();
-	data["temperature"] = temperature;
-	data["humidity"] = humidity;
-	data["illuminance"] = illuminance;
-	data["motion"] = motionDetected;
-	
 	Serial.print(char(PACKET_START));
-	Serial.print(data);
+	Serial.print(sensorData);
 	Serial.println(char(PACKET_END));
 }
 
@@ -422,8 +397,8 @@ void handlePacket(){
 				}
 			}
 			
-			b = readBuffer.read();	
-		}	
+			b = readBuffer.read();
+		}
 	}
 }
 
@@ -436,11 +411,13 @@ void processNetworkJoin(){
 	Log.Info("Joined network\n");
 }
 
+
 void addUnitToNetwork(int unitNum){
 	if (unitNum <= MAX_NETWORK_SIZE){
 		routingTable[unitNum] = timer.setTimeout(NETWORK_RESET_INTERVAL, cleanRoutingTable);
 	}
 }
+
 
 void processDataPacket(){
 	//TODO: Process incoming data packets over RF24
@@ -453,6 +430,7 @@ void sendACK(){
 void processACK(){
 	//TODO reset the network timeout of the node after receiving an ACK from the coordinator
 }
+
 void cleanRoutingTable(){
 	for (int i = 0; i < MAX_NETWORK_SIZE; i++){
 		
@@ -481,19 +459,22 @@ void transmitChar(char message){
 //////////////////////////////////////////////////////////////////////////
 // Sensors
 
-// Init
+// All
 
 
 /**
 * Initialise all attached sensors
 */
-void initialiseSensors(){
-	Log.Debug("Initialising sensors...\n");
+void startSensors(){
+	sensorData["id"] = unitID.c_str();
+	sensorData["version"] = LURKER_VERSION;
 	
-	initialiseTemperature();
-	initialiseHumidity();
-	initialiseIlluminaince();
-	initialiseMotion();
+	Log.Debug("Starting sensors...\n");
+	
+	startTemperature();
+	startHumidity();
+	startIlluminance();
+	startMotion();
 	
 	// Set up periodic sensor reads
 	printDataTimerID = timer.setInterval(SAMPLE_INTERVAL, printSensorData);
@@ -501,64 +482,27 @@ void initialiseSensors(){
 
 
 /**
-* Initialise the temperature sensor
-*/
-void initialiseTemperature(){
-	tempSensor.begin();
-	temperature = 0;
-	Log.Debug("Temperature started...\n");
-}
-
-
-/**
-* Initialise the humidity sensor
-*/
-void initialiseHumidity(){
-	humiditySensor.begin();
-	humidity = 0;
-	Log.Debug("Humidity started...\n");
-}
-
-
-/**
-* Initialise the light sensor
-*/
-void initialiseIlluminaince(){
-	lightSensor.begin();
-	lightSensor.SetAddress(Device_Address_L);
-	lightSensor.SetMode(Continuous_H_resolution_Mode);
-	
-	Log.Debug("Illuminance started...\n");
-}
-
-
-/**
-* Initialise the PIR motion sensor
-*/
-void initialiseMotion(){
-	pinMode(MOTION_PIN, INPUT);
-	delay(MOTION_INITIALISATION_TIME);
-	motionDetected = false;
-	
-	timer.setInterval(MOTION_CHECK_INTERVAL, readMotion);
-	Log.Debug("Motion started...\n");
-}
-
-// Read
-
-
-/**
 * Read all sensor data into global variables
 */
 void readSensors(){
-	temperature = readTemperature();
-	humidity = readHumidity();
-	illuminance = readIlluminance();
+	sensorData["temperature"] = readTemperature();
+	sensorData["humidity"] = readHumidity();
+	sensorData["illuminance"] = readIlluminance();
+	sensorData["motion"] = motionDetected;
 	
-	Log.Debug("Temperature: %d\n", int((temperature)*100));
-	Log.Debug("Humidity: %d\n", int((humidity*100)));
-	Log.Debug("Illuminance: %d\n", illuminance);
-	Log.Debug("Motion: %T\n", motionDetected);
+	flashSensorReadLight();
+}
+
+
+// Temperature
+
+/**
+* Start the temperature sensor
+*/
+void startTemperature(){
+	tempSensor.begin();
+	temperature = 0;
+	Log.Debug("Temperature started...\n");
 }
 
 
@@ -574,6 +518,18 @@ float readTemperature(){
 }
 
 
+// Humidity
+
+/**
+* Start the humidity sensor
+*/
+void startHumidity(){
+	humiditySensor.begin();
+	humidity = 0;
+	Log.Debug("Humidity started...\n");
+}
+
+
 /**
 * Take a humidity reading.
 * May take up to 2 seconds with the DHT11 sensor
@@ -586,6 +542,20 @@ float readHumidity(){
 }
 
 
+// Illuminance
+
+/**
+* Initialise the light sensor
+*/
+void startIlluminance(){
+	lightSensor.begin();
+	lightSensor.SetAddress(Device_Address_L);
+	lightSensor.SetMode(Continuous_H_resolution_Mode);
+	
+	Log.Debug("Illuminance started...\n");
+}
+
+
 /**
 * Take an illuminance reading
 *
@@ -594,6 +564,21 @@ float readHumidity(){
 */
 long readIlluminance(){
 	return lightSensor.GetLightIntensity();
+}
+
+
+// Motion
+
+/**
+* Initialise the PIR motion sensor
+*/
+void startMotion(){
+	pinMode(MOTION_PIN, INPUT);
+	delay(MOTION_INITIALISATION_TIME);
+	motionDetected = false;
+	
+	timer.setInterval(MOTION_CHECK_INTERVAL, readMotion);
+	Log.Debug("Motion started...\n");
 }
 
 
@@ -614,14 +599,12 @@ void readMotion(){
 			motionDetected = true;
 			timeOfLastMotion = millis();
 			
-			Log.Info("Motion detected");
-			switchLight(MOTION_LED, ON);
+			Log.Info("Motion detected\n");
+			flashMotionLight();
 			
 			}else{
 			// No alarm; is fine
 			motionDetected = false;
-			
-			switchLight(MOTION_LED, OFF);
 		}
 	}
 }
@@ -688,8 +671,46 @@ void switchLight(int ledNum, bool state){
 		digitalWrite(leds[ledNum], state);
 	}
 
-		Log.Debug("LED%d on pin %d - %T\n", ledNum, leds[ledNum], state);
-	}
+	Log.Debug("LED%d on pin %d - %T\n", ledNum, leds[ledNum], state);
+}
+
+
+/**
+* Briefly flash the motion sensor indicator
+*/
+void flashMotionLight(){
+	switchLight(MOTION_LED, ON);
+	
+	timer.setTimeout(FLASH_TIME, endMotionLightFlash);
+	
+}
+
+
+/**
+* Callback for the flashMotionLight timer
+* Turn the motion light off after the timer expires
+*/
+void endMotionLightFlash(){
+	switchLight(MOTION_LED, OFF);
+}
+
+
+/**
+* Flash the sensor read indicator
+*/
+void flashSensorReadLight(){
+	switchLight(SENSOR_READ_LED, ON);
+	
+	timer.setTimeout(FLASH_TIME, endSensorReadFlash);
+}
+
+
+/**
+* Callback for the flashSensorReadLight function
+* Turns the read light off after the timer elapses
+*/
+void endSensorReadFlash(){
+	switchLight(SENSOR_READ_LED, OFF);
 }
 
 
