@@ -54,6 +54,10 @@ build/
 [Tt]est[Rr]esult*/
 [Bb]uild[Ll]og.*
 
+*.cppproj
+*.atsln
+*.atsuo
+
 *_i.c
 *_p.c
 *.ilk
