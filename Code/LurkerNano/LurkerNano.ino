@@ -1,3 +1,5 @@
+#include <SerialCommand.h>
+#include <ArduinoCommand.h>
 #include <RF24_config.h>
 #include <RF24.h>
 #include <nRF24L01.h>
@@ -11,7 +13,7 @@
 #include <BH1750FVI.h>
 #include <JsonGenerator.h>
 #include <DHT.h>
-#include "avr/wdt.h" 
+#include "avr/wdt.h"
 #include "settings.h"
 
 using namespace ArduinoJson::Generator;
@@ -62,8 +64,8 @@ RF24 radio(CE_PIN, CSN_PIN);
 
 // Lights
 int leds[3] = {LED0, LED1, LED_BUILTIN};
-	
-JsonObject<8> sensorData;
+
+
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -76,9 +78,6 @@ int networkTimeoutTimerID;
 int printDataTimerID;
 
 // Communication
-enum COMM_TAGS{
-	
-};
 bool connectedToNetwork = false;
 
 String received = "";
@@ -91,7 +90,12 @@ StraightBuffer writeBuffer(BUFFER_LENGTH);
 // Coordinator - Routing table
 int routingTable[MAX_NETWORK_SIZE];
 
+// Sensor data object
+JsonObject<8> sensorData;
 
+// Command handlers
+ArduinoCommand commandHandler;
+SerialCommand sCmd;
 
 //////////////////////////////////////////////////////////////////////////
 // Main Functions
@@ -110,6 +114,8 @@ void setup()
 	initialiseBuzzer();
 	initialiseRadio();
 	initialiseLights();
+	
+	startCommandHandler();
 }
 
 
@@ -136,9 +142,9 @@ void loop(){
 void printSensorData(){
 	readSensors();
 	
-	Serial.print(char(PACKET_START));
+	Serial.print(PACKET_START);
 	Serial.print(sensorData);
-	Serial.println(char(PACKET_END));
+	Serial.println(PACKET_END);
 }
 
 
@@ -146,44 +152,26 @@ void printSensorData(){
 * Check serial for incoming packets
 */
 void checkSerial(){
-	// Grab in bytes, one at a time
-	if (Serial.available()){
-		char c = Serial.read();
-		
-		// Packet start char received; start recording
-		if (c == char(PACKET_START) && !recording){
-			recording = true;
-			received = "#";
-			Log.Debug("Serial packet started...");
-		}
-		
-		// Packet end char received; stop recording and process the packet
-		else if (c == PACKET_END && recording){
-			recording = false;
-			received += "$";
-			
-			Log.Info("Serial packet received. [Length: %d]\n", received.length());
-			Log.Debug("Received: %s\n", received.c_str());
-			
-			// Transfer string to the read buffer and do the thing
-			readBuffer.reset();
-			
-			for (int i = 0; i < received.length(); i++){
-				readBuffer.write(byte(received[i]));
-			}
-			
-			handlePacket();
-		}
-		
-		
-		//
-		else{
-			if (recording && received.length() < (BUFFER_LENGTH - 1)){
-				received += char(c);
-				Log.Debug("Packet length: %d\n", received.length());
-			}
-		}
+	while (Serial.available()){
+		char inChar = Serial.read();
+		commandHandler.read(inChar);
 	}
+}
+
+void startCommandHandler(){
+	commandHandler.setTerminator(PACKET_END);
+	commandHandler.setDefaultHandler(commandNotRecognised);
+	
+	commandHandler.addCommand(BUZZER_ON_CODE, buzzerOn);
+	commandHandler.addCommand(BUZZER_OFF_CODE, buzzerOff);
+	commandHandler.addCommand(NETWORK_JOIN_REQUEST, addUnitToNetwork);
+	commandHandler.addCommand(NETWORK_JOIN_CONFIRM, processNetworkJoin);
+	commandHandler.addCommand(DATA_TRANSMIT_REQUEST, transmitDataPacket);
+	commandHandler.addCommand(SENSOR_READ_REQUEST, printSensorData);
+}
+
+void commandNotRecognised(const char *command){
+	Log.Error("Warning - Unknown command\n");
 }
 
 
@@ -239,8 +227,7 @@ void resetNetworkConnection(){
 */
 void transmitJoinRequest(){
 	writeBuffer.reset();
-	writeBuffer.write(PACKET_START);
-	writeBuffer.write(NETWORK_JOIN_REQUEST);
+	writeBuffer.write(NETWORK_JOIN_REQUEST[0]);
 	writeBuffer.write(UNIT_NUMBER);
 	writeBuffer.write(PACKET_END);
 	
@@ -273,28 +260,23 @@ void transmitWriteBuffer(){
 */
 void prepareDataPacket(){
 	writeBuffer.reset();
-	writeBuffer.write(PACKET_START);
-	writeBuffer.write(DATA_PACKET_RESPONSE);
+	writeBuffer.write(PACKET_START[0]);
+	writeBuffer.write(DATA_TRANSMIT_RESPONSE[0]);
 	
-	writeBuffer.write(UNIT_ID_CODE);
+	writeBuffer.write(UNIT_ID_CODE[0]);
 	writeBuffer.write(UNIT_NUMBER);
-	writeBuffer.write(DIVIDER);
 	
-	writeBuffer.write(TEMPERATURE_CODE);
+	writeBuffer.write(TEMPERATURE_CODE[0]);
 	writeBuffer.writeInt(int(temperature*100));
-	writeBuffer.write(DIVIDER);
 	
-	writeBuffer.write(HUMIDITY_CODE);
+	writeBuffer.write(HUMIDITY_CODE[0]);
 	writeBuffer.writeInt(int(humidity*100));
-	writeBuffer.write(DIVIDER);
 	
-	writeBuffer.write(ILLUMINANCE_CODE);
+	writeBuffer.write(ILLUMINANCE_CODE[0]);
 	writeBuffer.writeInt(illuminance);
-	writeBuffer.write(DIVIDER);
-	
-	writeBuffer.write(MOTION_CODE);
+
+	writeBuffer.write(MOTION_CODE[0]);
 	writeBuffer.write(motionDetected);
-	writeBuffer.write(DIVIDER);
 	
 	writeBuffer.write(PACKET_END);
 }
@@ -307,6 +289,10 @@ void checkRadio(){
 	if (radio.available()){
 		Log.Info("Packet received\n");
 		readRadioPacket();
+		
+		while (readBuffer.available()){
+			commandHandler.read(readBuffer.read());
+		}
 	}
 }
 
@@ -316,90 +302,7 @@ void checkRadio(){
 */
 void readRadioPacket(){
 	radio.read(readBuffer.getBufferAddress(), BUFFER_LENGTH);
-	handlePacket();
-}
-
-
-/**
-*
-*/
-void handlePacket(){
-	
-	// First char needs to be a start byte
-	byte b = readBuffer.read();
-	Log.Debug("Command: %c\n", char(b));
-	
-	// Do the rest of the things
-	if (b == PACKET_START){
-		b = readBuffer.read();
-		
-		while (b != PACKET_END && readBuffer.getNumRemaining() > 0){
-			Log.Debug("Command: %c\n", char(b));
-			
-			switch (b){
-				
-				case BUZZER_ON_CODE:{
-					buzzerOn();
-					break;
-				}
-				
-				case BUZZER_OFF_CODE:{
-					buzzerOff();
-					break;
-				}
-				
-				case DATA_PACKET_REQUEST:{
-					transmitDataPacket();
-					break;
-				}
-				
-				case DATA_PACKET_RESPONSE:{
-					processDataPacket();
-					break;
-				}
-				
-				case LIGHT_ON_CODE:{
-					char lightID = readBuffer.read();
-					switchLight(int(lightID), ON);
-					break;
-				}
-				
-				case LIGHT_OFF_CODE:{
-					char lightID = readBuffer.read();
-					switchLight(int(lightID), OFF);
-					break;
-				}
-
-				case NETWORK_JOIN_REQUEST:{
-					int unitNumber = readBuffer.read();
-					addUnitToNetwork(unitNumber);
-					break;
-				}
-				
-				case NETWORK_JOIN_CONFIRM:{
-					processNetworkJoin();
-					break;
-				}
-
-				case NETWORK_CONNECTION_RESET:{
-					resetNetworkConnection();
-					break;
-				}
-
-				case DIVIDER:{
-					break;
-					
-				}
-
-				default:{
-					Log.Error("Warning: unknown comm tag [%c]\n", char(b));
-					break;
-				}
-			}
-			
-			b = readBuffer.read();
-		}
-	}
+	readBuffer.setWritePosition(BUFFER_LENGTH);
 }
 
 
@@ -412,7 +315,9 @@ void processNetworkJoin(){
 }
 
 
-void addUnitToNetwork(int unitNum){
+void addUnitToNetwork(){
+	char unitNum = commandHandler.next()[0];
+	
 	if (unitNum <= MAX_NETWORK_SIZE){
 		routingTable[unitNum] = timer.setTimeout(NETWORK_RESET_INTERVAL, cleanRoutingTable);
 	}

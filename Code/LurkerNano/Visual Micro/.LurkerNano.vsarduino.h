@@ -20,6 +20,8 @@ extern "C" void __cxa_pure_virtual() {;}
 //
 void printSensorData();
 void checkSerial();
+void startCommandHandler();
+void commandNotRecognised(const char *command);
 void initialiseRadio();
 void joinNetwork();
 void resetNetworkConnection();
@@ -29,9 +31,8 @@ void transmitWriteBuffer();
 void prepareDataPacket();
 void checkRadio();
 void readRadioPacket();
-void handlePacket();
 void processNetworkJoin();
-void addUnitToNetwork(int unitNum);
+void addUnitToNetwork();
 void processDataPacket();
 void sendACK();
 void processACK();

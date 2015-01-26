@@ -60,24 +60,25 @@ const long BASE_PIPE = 0x9090909000LL;
 const long UNIT_PIPE = BASE_PIPE + UNIT_NUMBER;
 
 // Comm Tags
-const char PACKET_START[] = "#",
-const char PACKET_END[] = "$",
-const char DIVIDER[] = ",",
+const char PACKET_START[] = "#";
+const char PACKET_END = '$';
+const char DIVIDER[] = ",";
 
-const char NETWORK_JOIN_REQUEST[] = "j",
-const char NETWORK_JOIN_CONFIRM[] = "J",
-const char NETWORK_CONNECTION_RESET[] = "R",
-const char DATA_PACKET_REQUEST[] = "D",
-const char DATA_PACKET_RESPONSE[] = "d",
+const char NETWORK_JOIN_REQUEST[] = "j";
+const char NETWORK_JOIN_CONFIRM[] = "J";
+const char NETWORK_CONNECTION_RESET[] = "R";
+const char SENSOR_READ_REQUEST[] = "r";
+const char DATA_TRANSMIT_REQUEST[] = "D";
+const char DATA_TRANSMIT_RESPONSE[] = "d";
 
-const char UNIT_ID_CODE[] = "Z",
-const char TEMPERATURE_CODE[] = "T",
-const char HUMIDITY_CODE[] = "H",
-const char ILLUMINANCE_CODE[] = "I",
-const char MOTION_CODE[] = "M",
+const char UNIT_ID_CODE[] = "Z";
+const char TEMPERATURE_CODE[] = "T";
+const char HUMIDITY_CODE[] = "H";
+const char ILLUMINANCE_CODE[] = "I";
+const char MOTION_CODE[] = "M";
 
-const char BUZZER_ON_CODE[] = "B",
-const char BUZZER_OFF_CODE[] = "b",
+const char BUZZER_ON_CODE[] = "B";
+const char BUZZER_OFF_CODE[] = "b";
 
-const char LIGHT_ON_CODE[] = "L",
-const char LIGHT_OFF_CODE[] = "l"
+const char LIGHT_ON_CODE[] = "L";
+const char LIGHT_OFF_CODE[] = "l";
